@@ -41,6 +41,13 @@ jobs:
           cp -r assets/android-res/* android/app/src/main/res/
           rm -f android/app/src/main/res/mipmap-anydpi-v26/*.xml.bak
 
+      - name: Sabit imza ve sürüm numarası
+        run: |
+          cp keystore/krallik.jks android/app/krallik.jks
+          sed -i '0,/^android {/s//android {\n    signingConfigs {\n        debug {\n            storeFile file("krallik.jks")\n            storePassword "krallik123"\n            keyAlias "krallik"\n            keyPassword "krallik123"\n        }\n    }/' android/app/build.gradle
+          sed -i "s/versionCode 1/versionCode ${{ github.run_number }}/" android/app/build.gradle
+          grep -n "versionCode\|krallik" android/app/build.gradle
+
       - name: Ekranı yatay/dikey serbest bırak ve tam ekran yap
         run: |
           sed -i 's/android:theme="@style\/AppTheme.NoActionBarLaunch"/android:theme="@style\/AppTheme.NoActionBarLaunch"\n            android:screenOrientation="sensor"/' android/app/src/main/AndroidManifest.xml || true
