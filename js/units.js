@@ -27,8 +27,10 @@ function findRes(j,x,y){
  }
  return best;
 }
+function canDrop(b,rk){const d=BT[b.t].drop;return d&&(d===1||d.includes(rk));}
 function toDrop(u){
- const d=nearestB(u,b=>b.team==='p'&&b.done&&BT[b.t].drop);
+ const rk=u.job==='hunt'?'food':(JOBRES[u.job]&&JOBRES[u.job][1]);
+ const d=nearestB(u,b=>b.team==='p'&&b.done&&canDrop(b,rk));
  if(!d){u.st='idle';u.wait=2;return;}
  if(setPath(u,d.x,d.y,d.w,d.h,1,true)===0){u.st='idle';u.wait=1;return;}
  u.st='toDrop';
@@ -105,6 +107,7 @@ function workTick(u,dt){
 }
 function updVillager(u,dt){
  if(!S.founded){if(u.path)walkTo(u,dt);return;}
+ if(u.wnd){woundTick(u,dt);return;}
  if(u.wait>0){u.wait-=dt;return;}
  u.scan-=dt;
  if(u.scan<=0){u.scan=0.6;if(nearestEnemy(u,4.5,true)){u.flee=5;u.path=null;u.st='flee';}}
@@ -117,6 +120,15 @@ function updVillager(u,dt){
   }
   walkTo(u,dt);return;
  }
+ if(isNight()&&u.job!=='fire'&&u.job!=='doc'){
+  if(u.st!=='sleep'&&u.st!=='toBed'){
+   const h=nearestB(u,b=>b.team==='p'&&b.done&&(b.t==='ev'||b.t==='tc'));
+   u.wb=0;u.carry=u.carry;
+   if(h&&setPath(u,h.x,h.y,h.w,h.h,1,true)===1)u.st='toBed';else u.st='sleep';
+  }
+  if(u.st==='toBed'){if(walkTo(u,dt))u.st='sleep';return;}
+  if(u.st==='sleep')return;
+ }else if(u.st==='sleep'||u.st==='toBed'){u.st='idle';u.path=null;u.wait=Math.random()*2;}
  switch(u.st){
   case 'idle':startJob(u);break;
   case 'toRes':if(walkTo(u,dt))u.st='gather';break;
@@ -179,8 +191,8 @@ function finishB(b){
 
 // ---------- savaş ----------
 function dmgOf(a,e){
- const d=UT[a.t];let atk=d.atk;
- if(a.team==='p'||a.team==='a')atk*=fxm('atk');
+ const d=UT[a.t];let atk=d.atk+(a.atkB||0);
+ if(a.team==='p'||a.team==='a'){atk*=fxm('atk');if(!d.hero&&S.units.some(h=>h.t==='kahraman'&&!h.dead&&Math.abs(h.x-a.x)<7&&Math.abs(h.y-a.y)<7))atk*=1.15;}
  if(e.w){
   if(!d.siege)atk*=0.45;
   return Math.max(1,atk-(BT[e.t].arm||0));
@@ -194,6 +206,11 @@ let lastLogLoss=0;
 function killU(u,a){
  if(u.dead)return;
  u.hp=0;u.dead=1;UM.delete(u.id);
+ if(u.t==='kahraman'&&u.who){
+  if(u.who==='ruler')succession('savaşta düştü');
+  else{const hn=u.who.slice(5);S.dyn.heirs=S.dyn.heirs.filter(h=>h.name!==hn);S.happy=Math.max(0,S.happy-10);log('⚰ Varis '+hn+' savaşta düştü!');}
+ }
+ if(a&&a.t==='kahraman'&&(u.team==='b'||u.team==='k')){a.xp=(a.xp||0)+1;if(a.xp%4===0){a.mhp+=15;a.hp=Math.min(a.mhp,a.hp+30);a.atkB=(a.atkB||0)+1;log('⭐ '+a.hn+' seviye atladı!');}}
  FX.push({k:'skull',x:u.x,y:u.y,t:1,T:1});
  if(u.team==='b'||u.team==='k')S.stats.kills++;
  if(u.team==='p'){S.stats.lost++;S.recentLoss=(S.recentLoss||0)+1;if(S.t-lastLogLoss>3){lastLogLoss=S.t;log('💀 '+UT[u.t].n+' öldü.',u.x,u.y);}}
@@ -226,11 +243,32 @@ function alertDefenders(a,e){
   u.tg=a.id;u.forced=0;
  }
 }
+function isNight(){const td=(S.t%DAY)/DAY;return td>0.78||td<0.06;}
+function woundV(v,a){
+ v.hp=1;v.wnd=1;v.st='hurt';v.path=null;v.tg=0;v.carry=0;v.flee=0;v.wait=0;v.hpath=0;
+ log('🩹 '+(v.job?JOBNAME(v.job):'Köylü')+' yaralandı'+(countB('hastane',true)?' — hastaneye taşınıyor.':' — evinde dinlenecek.'),v.x,v.y);
+}
+function JOBNAME(j){const o=JOBS.find(x=>x.id===j);return o?o.n:'Köylü';}
+function woundTick(u,dt){
+ const hos=nearestB(u,b=>b.team==='p'&&b.t==='hastane'&&b.done);
+ const rest=hos||nearestB(u,b=>b.team==='p'&&b.done&&(b.t==='ev'||b.t==='tc'));
+ if(rest&&dEnt(u,rest)>1.5){
+  if(!u.path&&(u.hpath||0)<=0){u.hpath=2;if(setPath(u,rest.x,rest.y,rest.w,rest.h,1,true)===0)u.hpath=5;}
+  u.hpath-=dt;
+  if(u.path)moveStep(u,dt*0.7);
+  return;
+ }
+ u.hp=Math.min(u.mhp,u.hp+(hos?(1.6+(hos.wk.length?2:0)):0.25)*dt);
+ if(u.hp>=u.mhp*0.8){u.wnd=0;u.st='idle';u.path=null;u.wait=0.5;log('💪 '+JOBNAME(u.job)+' iyileşti, işine dönüyor.',u.x,u.y);}
+}
 function damage(e,dmg,a){
- if(e.hp<=0)return;
+ if(e.hp<=0||e.wnd)return;
  e.hp-=dmg;e.fl=S.t;
+ if(e.team==='f'&&a&&S.kings[e.kid])S.kings[e.kid].lastAtk=a.team;
  if(a&&e.team==='p'&&(a.team==='b'||a.team==='k')&&(e.w||e.t==='koylu'))alertDefenders(a,e);
- if(e.hp<=0){if(e.w)destroyB(e,a);else killU(e,a);}
+ if(e.hp<=0){
+  if(!e.w&&e.team==='p'&&e.t==='koylu'&&a&&(a.team==='w'||((a.team==='b'||a.team==='k')&&Math.random()<0.4))){woundV(e,a);return;}
+  if(e.w)destroyB(e,a);else killU(e,a);}
  else if(!e.w&&a&&!e.tg&&e.t!=='koylu'&&e.st!=='move')e.tg=a.id;
 }
 function startFire(b){
@@ -256,7 +294,7 @@ function updFighter(u,dt){
  if(u.team==='a'&&u.life!=null){u.life-=dt;if(u.life<=0){killU(u);return;}}
  u.scan-=dt;
  let e=u.tg?getEnt(u.tg):null;
- if(e&&(e.hp<=0||e.dead))e=null;
+ if(e&&(e.hp<=0||e.dead||e.wnd))e=null;
  if(!e)u.tg=0;
  if(u.scan<=0){
   u.scan=0.3+Math.random()*0.15;

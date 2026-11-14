@@ -25,15 +25,17 @@ function kSpawn(i,t){
  const u=mkUnit(t,'f',p.x,p.y,{kid:i,st:'idle',hx:k.x,hy:k.y+3,guard:UT[t].mil?1:0});
  return u;
 }
-function initKingdoms(){
- KINGS.forEach((k,i)=>{
+function initKingdoms(){KINGS.forEach((k,i)=>kInit(i));}
+function kInit(i){
+ {
+  const k=KINGS[i];S.kings[i].dead=false;S.kings[i].lastAtk=null;
   S.kings[i].kd={food:100,wood:80,stone:30,gold:50,lvl:0,pop:0,camp:0,raidCool:ri(4,10),campCool:ri(3,8),campGoal:0};
   const tc=mkB('ftc','f',k.x-2,k.y-2,true,{kid:i});
   [[-6,-1],[5,-3],[-5,5],[4,5],[-1,-7]].forEach(([dx,dy])=>{const x=k.x+dx,y=k.y+dy;if(walkRect(x,y,2,2))mkB('fev','f',x,y,true,{kid:i});});
   [[8,2],[-9,3]].forEach(([dx,dy])=>{const x=k.x+dx,y=k.y+dy;if(walkRect(x,y,3,3))mkB('fciftlik','f',x,y,true,{kid:i});});
   for(let j=0;j<6;j++)kSpawn(i,'fkoylu');
   for(let j=0;j<4;j++)kSpawn(i,j%2?'okcu':'mizrakli');
- });
+}
 }
 // ---- köylü davranışı ----
 function updFolk(u,dt){
@@ -78,13 +80,32 @@ function updFolk(u,dt){
  }
 }
 // ---- günlük gelişim ----
+function aliveKings(){return S.kings.filter(k=>!k.dead).length;}
+function killKingdom(i){
+ const k=S.kings[i],K=KINGS[i];
+ k.dead=true;k.deadDay=S.day;k.fall=k.lastAtk==='b'?'b':'x';k.war=false;k.pact=null;
+ for(const b of S.blds.slice())if(b.team==='f'&&b.kid===i)destroyB(b);
+ S.units.forEach(u=>{if(u.team==='k'&&u.kid===i)killU(u);});
+ log('💀 '+K.n+' tarihe karıştı'+(k.fall==='b'?' (haydutlar yok etti).':'.'),K.x,K.y);
+}
+function reviveKingdom(i){
+ const k=S.kings[i],K=KINGS[i];
+ kInit(i);k.rel=10;k.pact=null;k.war=false;k.cool=0;
+ showModal('👑 Yeni krallık','Haydutların yıktığı '+K.n+' küllerinden doğdu: hayatta kalanlar toplanıp yeni bir hanedan kurdu ('+K.who+' ailesinden biri tahta çıktı). Yeni komşuyla ilişkiler sıfırdan başlıyor.',[{t:'Hayırlı olsun'}]);
+}
 function kingdomsDay(){
+ if(aliveKings()<3){
+  const c=S.kings.map((k,i)=>({k,i})).filter(o=>o.k.dead&&o.k.fall==='b'&&S.day-o.k.deadDay>=12);
+  if(c.length&&Math.random()<0.4)reviveKingdom(c[0].i);
+ }
  KINGS.forEach((K,i)=>{
   const kd=kdOf(i),k=S.kings[i];
+  if(k.dead)return;
   const folk=kUnits(i,u=>u.t==='fkoylu'),sol=kUnits(i,u=>UT[u.t].mil);
   const tc=kBlds(i,'ftc')[0];
-  if(!tc){ // merkez yıkıldıysa yeniden kur
-   if(kd.wood>=100){const p=kFind(i,4,4);if(p){mkB('ftc','f',p.x,p.y,true,{kid:i});kd.wood-=100;}}
+  if(!tc){ // merkez yıkıldıysa halk yeniden kurar; kimse kalmadıysa krallık yok olur
+   if(!folk.length&&!sol.length){killKingdom(i);return;}
+   if(kd.wood>=100&&folk.length){const p=kFind(i,4,4);if(p){mkB('ftc','f',p.x,p.y,true,{kid:i});kd.wood-=100;}}
    return;
   }
   kd.pop=folk.length+sol.length;kd.stone+=folk.length*0.4;
@@ -135,7 +156,7 @@ function kingdomsDay(){
    let best=null,bd=55;
    for(const c of S.camps){if(!c.alive)continue;const d=Math.hypot(c.x-K.x,c.y-K.y);if(d<bd){bd=d;best=c;}}
    if(best){
-    const n=2+Math.floor(S.day/15)+kd.lvl;
+    const n=(Math.random()<0.1?9+Math.floor(S.day/6):2+Math.floor(S.day/15)+kd.lvl);
     for(let j=0;j<n;j++)mkUnit(j%3===2?'haydutokcu':'haydut','b',best.x+0.5+j*0.5,best.y+2.5,{st:'amove',gx:K.x+ri(-3,3),gy:K.y+ri(-3,3),kraid:i});
     if(k.rel>=15)log('🏹 Haydutlar '+K.n+' topraklarına saldırıyor!');
    }

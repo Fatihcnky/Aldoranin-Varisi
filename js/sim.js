@@ -7,7 +7,7 @@ function newGame(seed){
   jobs:{build:1,wood:3,forage:2},story:0,nid:1,units:[],blds:[],camps:[],
   techs:{},research:null,ageProg:null,stats:{camps:0,kills:0,raids:0,lost:0},
   kings:KINGS.map(k=>({rel:{bilge:10,savasci:-10,acgozlu:0,dost:25}[k.pers],str:20,pact:null,war:false,cool:0,lastComplaint:-99,lastWar:-99})),
-  mkt:{food:1,wood:1,stone:1,iron:1},raidAt:22,nextEvent:5,epi:null,drought:0,starve:0,cold:0,
+  mkt:{food:1,wood:1,stone:1,iron:1},raidAt:20,nextEvent:5,epi:null,drought:0,starve:0,cold:0,
   start:{x:112,y:124},cam:{x:112,y:124,z:1},day:0,rally:null,done:false,won:false};
  UM=new Map();BM=new Map();
  newDynasty();
@@ -18,6 +18,7 @@ function newGame(seed){
  const st=S.start;
  for(let i=0;i<6;i++)mkUnit('koylu','p',st.x+0.5+(i%3)*0.8-0.8,st.y+0.5+(i/3|0)*0.8);
  for(let i=0;i<3;i++)mkUnit('mizrakli','p',st.x+0.5+i*0.8-0.8,st.y+2);
+ updFog();
  return S;
 }
 function spawnWild(t,minD){
@@ -112,7 +113,7 @@ function autoJobs(){
 function pactCount(){let n=0;S.kings.forEach(k=>{if(k.pact)n++;});return n;}
 function startResearch(id){
  const t=TECH[id];
- if(!t||S.techs[id]||S.research||t.age>S.age||!afford(t.cost))return false;
+ if(!t||S.techs[id]||S.research||t.age>S.age||!afford(t.cost)||(t.req&&!t.req.every(r=>S.techs[r])))return false;
  pay(t.cost);S.research={id,left:t.time};return true;
 }
 function ageInfo(){
@@ -174,7 +175,7 @@ function econ(dt){
  if(S.research){S.research.left-=dt*fxm('research');if(S.research.left<=0){const t=TECH[S.research.id];S.techs[S.research.id]=1;S.research=null;log('🔬 Araştırma tamam: '+t.n);}}
  if(S.ageProg){S.ageProg.left-=dt;if(S.ageProg.left<=0){S.age=S.ageProg.to;S.ageProg=null;showModal('🌟 '+AGES[S.age],'Yeni çağa ulaştın! Yeni binalar, birlikler ve teknolojiler açıldı.',[{t:'Harika'}]);}}
 }
-let accJ=0,accS=0;
+let accJ=0,accS=0,accF=0;
 function sim(dt){
  S.t+=dt;
  const d=curDay();
@@ -185,6 +186,7 @@ function sim(dt){
  for(const b of S.blds.slice())updBuilding(b,dt);
  econ(dt);
  for(let i=FX.length-1;i>=0;i--){FX[i].t-=dt;if(FX[i].t<=0)FX.splice(i,1);}
+ accF+=dt;if(accF>=0.4){accF=0;updFog();}
  accJ+=dt;
  if(accJ>=1){accJ=0;if(S.founded&&((S.t|0)%3===0))freeTrapped();if(S.founded){balanceJobs();checkStory();checkEnd();}}
 }
@@ -212,7 +214,7 @@ function canPlace(t,x,y){
  if(!inMap(x,y)||!inMap(x+d.w-1,y+d.h-1))return false;
  for(let dy=0;dy<d.h;dy++)for(let dx=0;dx<d.w;dx++){
   const i=(y+dy)*MW+x+dx;
-  if(T[i]!==0||OCC[i]!==0)return false;
+  if(T[i]!==0||OCC[i]!==0||FOG[i]===0)return false;
  }
  // köylüleri/yolu kapalı bir boşluğa hapsetmesin
  if(S.founded&&!d.decor&&t!=='duvar'){
@@ -300,7 +302,7 @@ function soldiers(){return S.units.filter(u=>u.team==='p'&&!u.dead&&UT[u.t].mil)
 function saveGame(){
  try{
   const o=JSON.stringify(S,(k,v)=>k==='path'?undefined:v);
-  localStorage.setItem('ky_save',JSON.stringify({s:o,T:Array.from(T).join(''),RA:Array.from(RA,v=>Math.round(v)).join(','),R:Array.from(ROAD).join('')}));
+  localStorage.setItem('ky_save',JSON.stringify({s:o,T:Array.from(T).join(''),RA:Array.from(RA,v=>Math.round(v)).join(','),R:Array.from(ROAD).join(''),F:Array.from(FOG).join('')}));
   return true;
  }catch(e){return false;}
 }
@@ -315,6 +317,7 @@ function loadGame(){
   RA=Float32Array.from(d.RA.split(',').map(Number));
   ROAD=Uint8Array.from(d.R.split('').map(Number));
   OCC=new Int32Array(NN);
+  FOG=d.F?Uint8Array.from(d.F.split('').map(Number)):new Uint8Array(NN).fill(1);
   UM=new Map();BM=new Map();
   for(const b of S.blds){BM.set(b.id,b);fillOcc(b,b.id);}
   for(const u of S.units){u.path=null;u.st=u.team==='p'&&u.t==='koylu'?'idle':(u.st==='raid'?'raid':'idle');u.wait=Math.random()*0.5;UM.set(u.id,u);}

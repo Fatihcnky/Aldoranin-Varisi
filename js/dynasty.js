@@ -79,6 +79,20 @@ function holdFestival(){
  log('🎉 Şenlik düzenlendi! Halk eğleniyor.');return true;
 }
 
+// ---- kahramanlar ----
+function personOf(who){const D=S.dyn;return who==='ruler'?D.ruler:D.heirs.find(h=>h.name===who.slice(5));}
+function heroOf(who){return S.units.find(u=>u.t==='kahraman'&&!u.dead&&u.who===who);}
+function summonHero(who){
+ const per=personOf(who),tc=mainTC();
+ if(!per||per.age<16||heroOf(who)||!tc)return false;
+ if(popNow()+popQueued()>=popCap()){log('⛔ Barınak yetersiz.');return false;}
+ const p=spawnPos(tc),u=mkUnit('kahraman','p',p.x,p.y,{who,hn:per.name,st:'idle'});
+ if(per.trait==='savasci'){u.mhp+=40;u.hp=u.mhp;}
+ if(per.trait==='cesur')u.atkB=3;
+ log('👑 '+per.name+' orduya katıldı!',p.x,p.y);return true;
+}
+function dismissHero(who){const h=heroOf(who);if(h){h.dead=1;UM.delete(h.id);log('🏠 '+h.hn+' saraya döndü.');}}
+
 // ---- hanedan ----
 function marry(i){
  const D=S.dyn,k=S.kings[i],K=KINGS[i];
@@ -96,10 +110,11 @@ function proposeMarriage(i){
 }
 function succession(why){
  const D=S.dyn,old=D.ruler;
+ dismissHero('ruler');
  const adults=D.heirs.filter(h=>h.age>=16).sort((a,b)=>b.age-a.age);
  D.spouse=null;
  if(adults.length){
-  const n=adults[0];D.heirs=D.heirs.filter(h=>h!==n);D.ruler=n;S.happy=Math.max(0,S.happy-5);
+  const n=adults[0];D.heirs=D.heirs.filter(h=>h!==n);D.ruler=n;{const hh=heroOf('heir:'+n.name);if(hh)hh.who='ruler';}S.happy=Math.max(0,S.happy-5);
   showModal('⚰ Hükümdar öldü',(old.female?'Leydi ':'Lord ')+old.name+' '+why+'. Tahta '+n.name+' ('+n.age+', '+TRAITS[n.trait].n+') geçti. '+TRAITS[n.trait].d,[{t:'Yaşasın yeni hükümdar'}]);
  }else if(D.heirs.length){
   const n=D.heirs.sort((a,b)=>b.age-a.age)[0];D.heirs=D.heirs.filter(h=>h!==n);D.ruler=n;D.crisis=3;
@@ -128,7 +143,7 @@ function dynYear(){
  }
  // evlilik teklifi
  if(!D.spouse&&r.age>=18&&Math.random()<0.6){
-  const c=S.kings.map((k,i)=>({k,i})).filter(o=>o.k.rel>=15&&!o.k.war);
+  const c=S.kings.map((k,i)=>({k,i})).filter(o=>o.k.rel>=15&&!o.k.war&&!o.k.dead);
   if(c.length){
    const o=pick(c),K=KINGS[o.i];
    showModal('💍 Evlilik teklifi',K.who+' ('+K.n+'), hanedanın ile akrabalık kurmak için '+K.fam[r.female?1:0]+' ile evlenmeni öneriyor. Anlaşma bağlarınızı güçlendirir.',[

@@ -26,7 +26,7 @@ function uiReset(){UI.tab=null;UI.sel=null;UI.place=null;UI.road=false;UI.modalQ
 function cstr(c){return Object.keys(c).map(k=>'<span style="color:'+((S.res[k]||0)>=c[k]?'#fff':'#ff8a80')+'">'+RI[k]+c[k]+'</span>').join(' ');}
 function btn(label,a,v,dis,extra){return '<button data-a="'+a+'"'+(v!=null?' data-v="'+v+'"':'')+(extra?' data-w="'+extra+'"':'')+(dis?' class="dis"':'')+'>'+label+'</button>';}
 function bar(p){return '<span class="bar"><i style="width:'+Math.round(clamp(p,0,1)*100)+'%"></i></span>';}
-function dayText(){const d=curDay();return 'Yıl '+(Math.floor(d/(SEASON_DAYS*4))+1)+' · '+SEASONS[seas()]+' · Gün '+(d%SEASON_DAYS+1);}
+function dayText(){const d=curDay(),s=seasonOf(d);return 'Yıl '+(Math.floor(d/YEARD)+1)+' · '+SEASONS[s]+' '+(seasonDay(d)+1)+'/'+SL[s];}
 
 // ---------- alt çubuk ----------
 function buildBar(){
@@ -43,7 +43,7 @@ function updHint(){
  if(UI.place){
   const d=BT[UI.place.t];
   hn.style.display='block';
-  $('hinttxt').textContent=(UI.place.t==='tc'&&!S.founded?'Köyün kurulacağı yeri seç':d.n+': yeri seç')+(UI.place.x==null?' (haritaya dokun)':'');
+  $('hinttxt').textContent=(UI.place.mv?d.n+' taşı: yeni yeri seç':UI.place.t==='tc'&&!S.founded?'Köyün kurulacağı yeri seç':d.n+': yeri seç')+(UI.place.x==null?' (haritaya dokun)':'');
   $('hintbtn').innerHTML=btn('✔ Onayla','confirm')+btn('✖ İptal','cancel');
  }else if(UI.road){
   hn.style.display='block';$('hinttxt').textContent='Yol: haritada parmağını sürükle (kare başı 1 odun)';$('hintbtn').innerHTML=btn('✖ Bitti','cancel');
@@ -126,6 +126,7 @@ function pDip(){
  let h='<h4>Komşu krallıklar</h4>';
  KINGS.forEach((k,i)=>{
   const s=S.kings[i];
+  if(s.dead){h+='<div style="margin:6px 0;padding:6px;border:1px dashed #666;border-radius:8px;opacity:.7">⚰ <b>'+k.n+'</b> — yok oldu'+(s.fall==='b'?' <small>(haydutlar yıktı; komşular azalırsa yeniden doğabilir)</small>':'')+'</div>';return;}
   h+='<div style="margin:6px 0;padding:6px;border:1px solid '+k.col+';border-radius:8px"><b>'+k.n+'</b> — '+k.who+'<br><small>'+k.d+'</small><br>İlişki: '+Math.round(s.rel)+' '+bar((s.rel+100)/200)+' · Durum: '+(s.war?'⚔ SAVAŞ':s.pact==='ittifak'?'🤝 İttifak':s.pact?'📜 Ticaret':'—')+'<div class="row">';
   h+=btn('🎁 Hediye (50💰)','gift',i,S.res.gold<50);
   if(!S.dyn.spouse&&!s.war)h+=btn('💍 Evlilik (150💰)','marry',i,s.rel<30||S.res.gold<150);
@@ -148,8 +149,10 @@ function pDyn(){
  const D=S.dyn,r=D.ruler;
  let h='<h4>👑 Hane '+D.house+'</h4>';
  h+='<div><b>'+rulerTitle()+' '+r.name+'</b> ('+r.age+') — '+TRAITS[r.trait].n+'<br><small>'+TRAITS[r.trait].d+'</small></div>';
+ h+='<div class="row">'+(heroOf('ruler')?btn('🏠 Saraya çağır','unhero','ruler'):btn('⚔ Orduya çağır','hero','ruler',!mainTC()))+'<small>Hükümdar komutan olur: yakındaki askerlere +%15 saldırı, öldürdükçe seviye atlar. Savaşta düşerse tahtı kaybedersin!</small></div>';
  h+=D.spouse?'<div style="margin-top:4px">💍 Eş: <b>'+D.spouse.name+'</b> ('+D.spouse.age+') — '+KINGS[D.spouse.from].n+'</div>':'<div style="margin-top:4px"><small>💍 Evli değilsin. Komşu hanedanlarla ilişkiyi artır, evlilik teklifi gelebilir ya da Diplomasi\'den teklif et.</small></div>';
  h+='<div style="margin-top:4px">👶 Varisler: '+(D.heirs.length?D.heirs.map(x=>x.name+' ('+x.age+', '+TRAITS[x.trait].n+')').join(' · '):'<small>yok</small>')+'</div>';
+ D.heirs.filter(x=>x.age>=16).forEach(x=>{h+='<div class="row">'+(heroOf('heir:'+x.name)?btn('🏠 '+x.name+' saraya','unhero','heir:'+x.name):btn('⚔ '+x.name+' orduya','hero','heir:'+x.name,!mainTC()))+'<small>Varis komutan olarak savaşabilir.</small></div>';});
  if(D.crisis>0)h+='<div style="color:#ff8a80">⚠ Hanedan krizi sürüyor.</div>';
  const hp=Math.round(S.happy);
  h+='<h4>🙂 Halk mutluluğu: '+hp+' '+bar(hp/100)+'</h4><small>'+(hp>=65?'Göçmenler gelir, verim yüksek.':hp<20?'Halk isyana yakın!':'Verim: x'+happyMul().toFixed(2))+'</small>';
@@ -182,7 +185,7 @@ function pSel(){
  if(b.team==='p'&&b.done){
   trainList(b).forEach(t=>{const u=UT[t],why=canTrain(t);h+='<div class="row">'+btn(u.g+' '+u.n,'train',t,!!why,b.id)+btn('×5','train5',t,!!why,b.id)+'<small>'+(why?'🔒 '+why:cstr(u.cost))+'</small></div>';});
   if(b.q.length)h+='<small>Kuyruk: '+b.q.map(q=>UT[q.u].g).join(' ')+'</small>';
-  if(b.t!=='tc')h+='<div class="row">'+btn('🗑 Yık (iade %50)','demolish',b.id)+'</div>';
+  if(b.t!=='tc')h+='<div class="row">'+btn('🚚 Taşı','move',b.id)+btn('🗑 Yık (iade %50)','demolish',b.id)+'</div>';
  }
  if(b.team==='b')h+='<small>Düşman kampı! Askerlerinle saldır.</small>';
  return h;
@@ -230,6 +233,7 @@ function act(a,v,w,el){
   case 'selall':UI.sel={kind:'u',ids:S.units.filter(u=>u.team==='p').map(u=>u.id)};break;
   case 'place':UI.place={t:v,x:null,y:null};UI.road=false;UI.tab=null;updPanel(true);updHint();break;
   case 'confirm':doConfirm();break;
+  case 'move':{const b=BM.get(+v);if(b&&b.done&&b.team==='p'&&b.t!=='tc'){UI.place={t:b.t,mv:b.id,x:b.x,y:b.y};UI.sel=null;UI.tab=null;updPanel(true);updHint();}break;}
   case 'cancel':UI.place=null;UI.road=false;updHint();break;
   case 'road':UI.road=true;UI.place=null;UI.tab=null;updPanel(true);updHint();break;
   case 'train':{const b=BM.get(+w)||bestTrainer(v);if(b)enqueue(b,v,1);break;}
@@ -247,6 +251,8 @@ function act(a,v,w,el){
   case 'sell':sellRes(v,50);break;
   case 'buy':buyRes(v,50);break;
   case 'tax':setTax();break;
+  case 'hero':summonHero(v);break;
+  case 'unhero':dismissHero(v);break;
   case 'fest':holdFestival();break;
   case 'marry':proposeMarriage(+v);break;
   case 'selarmy':UI.sel={kind:'u',ids:soldiers().map(u=>u.id)};UI.tab=null;updPanel(true);break;
@@ -261,8 +267,18 @@ function nextModalAfter(b){
  try{if(b&&b.fn)b.fn();}catch(e){console.error(e);}
  nextModal();
 }
+function placeOk(P){
+ if(P.t==='tc'&&!S.founded)return !founderOk(P.x,P.y);
+ if(!P.mv)return canPlace(P.t,P.x,P.y);
+ const b=BM.get(P.mv);if(!b)return false;
+ fillOcc(b,0);const ok=canPlace(P.t,P.x,P.y);fillOcc(b,b.id);return ok;
+}
 function doConfirm(){
  const P=UI.place;if(!P||P.x==null)return;
+ if(P.mv){const b=BM.get(P.mv);if(!b){UI.place=null;updHint();return;}
+  if(!placeOk(P)){log('⛔ Buraya taşınamaz.');return;}
+  fillOcc(b,0);b.x=P.x;b.y=P.y;fillOcc(b,b.id);b.wk=[];FX.push({k:'poof',x:b.x+b.w/2,y:b.y+b.h/2,t:0.5,T:0.5});
+  log('🚚 '+BT[b.t].n+' taşındı.',b.x,b.y);UI.place=null;UI.sel=null;updPanel(true);updHint();return;}
  if(P.t==='tc'&&!S.founded){if(foundVillage(P.x,P.y)){UI.place=null;UI.sel=null;buildBar();updHint();}return;}
  if(!canPlace(P.t,P.x,P.y)){log('⛔ Buraya yapılamaz.');return;}
  placeBuilding(P.t,P.x,P.y);

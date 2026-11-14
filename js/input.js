@@ -15,13 +15,16 @@ document.addEventListener('pointerup',e=>{
 // --- harita girdisi ---
 const ptr=new Map();let tapInfo=null,pinch=0,painting=false;
 function overUI(t){return t!==cv;}
+let boxS=null;
 cv.addEventListener('pointerdown',e=>{
  cv.setPointerCapture(e.pointerId);
+ if(UI.box&&e.isPrimary&&!UI.place&&!UI.road){boxS={x:e.clientX,y:e.clientY};const r=$('selrect');r.style.display='block';r.style.left=e.clientX+'px';r.style.top=e.clientY+'px';r.style.width='0';r.style.height='0';return;}
  ptr.set(e.pointerId,{x:e.clientX,y:e.clientY});
  if(ptr.size===1){tapInfo={x:e.clientX,y:e.clientY,t:performance.now(),moved:false};painting=!!UI.road;if(painting)paintRoad(e.clientX,e.clientY);}
  else{tapInfo=null;painting=false;const p=[...ptr.values()];pinch=Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y);}
 });
 cv.addEventListener('pointermove',e=>{
+ if(boxS){const r=$('selrect');r.style.left=Math.min(boxS.x,e.clientX)+'px';r.style.top=Math.min(boxS.y,e.clientY)+'px';r.style.width=Math.abs(e.clientX-boxS.x)+'px';r.style.height=Math.abs(e.clientY-boxS.y)+'px';return;}
  const p=ptr.get(e.pointerId);if(!p)return;
  const dx=e.clientX-p.x,dy=e.clientY-p.y;p.x=e.clientX;p.y=e.clientY;
  if(ptr.size===2){
@@ -35,6 +38,7 @@ cv.addEventListener('pointermove',e=>{
  else if(e.pointerType==='mouse'&&UI.place){const t=toTile(e.clientX,e.clientY);setGhost(t);}
 });
 function endPtr(e){
+ if(boxS){const b=boxS;boxS=null;$('selrect').style.display='none';UI.box=false;selectInRect(b.x,b.y,e.clientX,e.clientY);return;}
  const had=ptr.has(e.pointerId);ptr.delete(e.pointerId);
  if(ptr.size<2)pinch=0;
  if(had&&tapInfo&&!tapInfo.moved&&performance.now()-tapInfo.t<500&&ptr.size===0)onTap(e.clientX,e.clientY);
@@ -59,10 +63,11 @@ function paintRoad(px,py){
 }
 function unitAt(t,filter){
  let best=null,bd=0.8;
- for(const u of S.units){if(u.dead||!filter(u))continue;const d=Math.hypot(u.x-t.x,u.y-t.y);if(d<bd){bd=d;best=u;}}
+ for(const u of S.units){if(u.dead||!filter(u))continue;if(u.team!=='p'&&u.team!=='a'&&fogAt(u.x,u.y)!==2)continue;const d=Math.hypot(u.x-t.x,u.y-t.y);if(d<bd){bd=d;best=u;}}
  return best;
 }
-function bldAt(t){const x=Math.floor(t.x),y=Math.floor(t.y);if(!inMap(x,y))return null;const id=OCC[y*MW+x];return id?BM.get(id):null;}
+function bldAt(t){const x=Math.floor(t.x),y=Math.floor(t.y);if(!inMap(x,y)||FOG[y*MW+x]===0)return null;const id=OCC[y*MW+x];return id?BM.get(id):null;}
+let lastTap={id:0,t:0};
 function onTap(px,py){
  const t=toTile(px,py);
  if(UI.road)return;
@@ -79,7 +84,11 @@ function onTap(px,py){
   }
  }
  const u=unitAt(t,u=>u.team==='p');
- if(u){UI.sel={kind:'u',ids:[u.id]};UI.tab=null;updPanel(true);return;}
+ if(u){
+  const now=performance.now();
+  if(lastTap.id===u.id&&now-lastTap.t<450){selectSameType(u);lastTap={id:0,t:0};return;}
+  lastTap={id:u.id,t:now};
+  UI.sel={kind:'u',ids:[u.id]};UI.tab=null;updPanel(true);return;}
  const b=bldAt(t);
  if(b&&b.team!=='n'&&b.team!=='f'){UI.sel={kind:'b',id:b.id};UI.tab=null;updPanel(true);return;}
  UI.sel=null;updPanel(true);
@@ -115,5 +124,5 @@ function boot(){
   S=null;showModal('💾 Kayıtlı oyun','Kayıtlı bir oyun bulundu.',[{t:'Devam et',fn:()=>start(true)},{t:'Yeni oyun',fn:()=>{try{localStorage.removeItem('ky_save');}catch(e){}start(false);}}]);
  }else start(false);
 }
-window.__T={get S(){return S;},sim,act,newGame,foundVillage,placeBuilding,canPlace,autoJobs,balanceJobs,enqueue,launchRaid,UI};
+window.__T={AUD,get S(){return S;},sim,act,newGame,foundVillage,placeBuilding,canPlace,autoJobs,balanceJobs,enqueue,launchRaid,UI};
 boot();

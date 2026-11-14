@@ -2,7 +2,7 @@
 // ===== ÇEKİRDEK: durum, harita, yol bulma =====
 let S=null;
 let UM=new Map(),BM=new Map();
-let T,RA,ROAD,OCC;
+let T,RA,ROAD,OCC,FOG=new Uint8Array(MW*MH);
 const NN=MW*MH;
 const UNRE=new Float32Array(NN);
 const FX=[];
@@ -44,12 +44,26 @@ function trappedAt(x,y,extra){
  }
  return true;
 }
+function fogAt(x,y){return FOG[(Math.floor(y)*MW)+Math.floor(x)];}
+function revealC(x,y,r){
+ const r2=r*r,x0=Math.max(0,Math.floor(x-r)),x1=Math.min(MW-1,Math.ceil(x+r)),y0=Math.max(0,Math.floor(y-r)),y1=Math.min(MH-1,Math.ceil(y+r));
+ for(let yy=y0;yy<=y1;yy++)for(let xx=x0;xx<=x1;xx++){const dx=xx+0.5-x,dy=yy+0.5-y;if(dx*dx+dy*dy<=r2)FOG[yy*MW+xx]=2;}
+}
+function updFog(){
+ for(let i=0;i<NN;i++)if(FOG[i]===2)FOG[i]=1;
+ for(const u of S.units){if(u.dead||(u.team!=='p'&&u.team!=='a'))continue;revealC(u.x,u.y,u.t==='koylu'?5.5:7);}
+ for(const b of S.blds){if(b.team!=='p')continue;const d=BT[b.t];revealC(b.x+b.w/2,b.y+b.h/2,b.t==='tc'?13:(d.rng&&b.done?d.rng+3:(b.done?7:5)));}
+}
 function getEnt(id){return UM.get(id)||BM.get(id);}
 function dEnt(u,e){
  if(e.w){const dx=Math.max(e.x-u.x,0,u.x-(e.x+e.w)),dy=Math.max(e.y-u.y,0,u.y-(e.y+e.h));return Math.hypot(dx,dy);}
  return Math.hypot(e.x-u.x,e.y-u.y);
 }
-function seas(){return Math.floor(S.t/DAY/SEASON_DAYS)%4;}
+function seasonOf(d){let x=d%YEARD;for(let s=0;s<4;s++){if(x<SL[s])return s;x-=SL[s];}return 3;}
+function seasonDay(d){let x=d%YEARD;for(let s=0;s<4;s++){if(x<SL[s])return x;x-=SL[s];}return 0;}
+function seas(){return seasonOf(Math.floor(S.t/DAY));}
+// kış için gereken stok: (nüfus başına) odun ve yiyecek, kış süresine göre
+function winterNeed(){const pop=Math.max(1,popNow()),sec=SL[3]*DAY;return{wood:Math.ceil(pop*0.016*1.1*sec),food:Math.ceil(pop*0.022*sec*0.75)};}
 function curDay(){return Math.floor(S.t/DAY);}
 function fxm(k){let m=1;for(const id in S.techs){const f=TECH[id].fx;if(f&&f[k])m*=f[k];}if(typeof fxTrait==='function'&&S.dyn)m*=fxTrait(k);return m;}
 function fxa(k){let m=0;for(const id in S.techs){const f=TECH[id].add;if(f&&f[k])m+=f[k];}return m;}
@@ -80,7 +94,7 @@ function nearestEnemy(u,r,unitsOnly){
   const L=UGR[gy*GW+gx];
   if(L)for(const o of L){
    const dx=o.x-u.x,dy=o.y-u.y,dd=dx*dx+dy*dy;
-   if(dd>=bd||o.dead||o===u||!hostile(u,o))continue;
+   if(dd>=bd||o.dead||o.wnd||o===u||!hostile(u,o))continue;
    bd=dd;best=o;
   }
   if(!unitsOnly){const B=BGR[gy*GW+gx];
@@ -171,7 +185,7 @@ function walkTo(u,dt){ if(!u.path)return true; return !moveStep(u,dt); }
 
 // --- harita üretimi ---
 function genMap(){
- T=new Uint8Array(NN);RA=new Float32Array(NN);ROAD=new Uint8Array(NN);OCC=new Int32Array(NN);
+ T=new Uint8Array(NN);RA=new Float32Array(NN);ROAD=new Uint8Array(NN);OCC=new Int32Array(NN);FOG=new Uint8Array(NN);
  const rn=mulberry(S.seed),nw=noise2(S.seed),nf=noise2(S.seed+77);
  const st=S.start;
  for(let y=0;y<MH;y++)for(let x=0;x<MW;x++){

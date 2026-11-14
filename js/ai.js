@@ -9,13 +9,13 @@ function buyRes(k,n){const c=Math.ceil(buyPrice(k)*n);if(!countB('pazar',true)||
 function mainTC(){return S.blds.find(b=>b.t==='tc'&&b.team==='p')||S.blds.find(b=>b.team==='p'&&!b.decor);}
 
 // ---------- haydut baskını ----------
-function launchRaid(){
- const camps=S.camps.filter(c=>c.alive);
+function launchRaid(only){
+ const camps=only?[only]:S.camps.filter(c=>c.alive&&(c.peace||0)<=S.day);
  const tc=mainTC();
  if(!camps.length||!tc)return;
  camps.sort((a,b)=>Math.hypot(a.x-tc.x,a.y-tc.y)-Math.hypot(b.x-tc.x,b.y-tc.y));
  const c=camps[Math.floor(Math.random()*Math.min(3,camps.length))];
- const size=clamp(2+Math.floor(S.day/8)+Math.floor(popNow()/14)+S.rank,3,30);
+ const size=clamp(Math.floor((2+Math.floor(S.day/10)+Math.floor(popNow()/14)+S.rank)*(only?0.8:1)),3,30);
  for(let i=0;i<size;i++){
   let t='haydut';
   const r=Math.random();
@@ -32,8 +32,26 @@ function launchRaid(){
    log('🤝 '+KINGS[i].n+' yardım birliği gönderdi ('+n+' asker).',p.x,p.y);
   }
  });
- const ev=S.day<40?10:S.day<80?8:6;
- S.raidAt=S.day+ri(ev,ev+3);
+ const ev=S.day<60?20:S.day<120?16:12;
+ if(!only)S.raidAt=S.day+ri(ev,ev+3);
+}
+// haydut kampına yaklaşınca haraç iste, ödenmezse saldır
+function campWatch(){
+ if(!S.founded)return;
+ for(const c of S.camps){
+  if(!c.alive)continue;
+  if(c.raidAt&&S.day>=c.raidAt){c.raidAt=0;launchRaid(c);continue;}
+  if((c.peace||0)>S.day||(c.cool||0)>S.day||c.raidAt)continue;
+  const near=S.units.find(u=>u.team==='p'&&!u.dead&&u.t==='koylu'&&Math.hypot(u.x-c.x,u.y-c.y)<17)||S.blds.find(b=>b.team==='p'&&Math.hypot(b.x-c.x,b.y-c.y)<20);
+  if(near){c.cool=S.day+9;campDemand(c);}
+ }
+}
+function campDemand(c){
+ const amt=25+S.day*2+popNow()*2;
+ showModal('🏴 Haydut elçisi','Haydut kampı topraklarına yaklaşan adamlarını fark etti. Reis haraç istiyor: '+amt+' altın. Ödersen bir süre sana dokunmazlar; ödemezsen saldıracaklar.',[
+  {t:'Öde ('+amt+' 💰)',fn:()=>{if(S.res.gold>=amt){S.res.gold-=amt;c.peace=S.day+14;log('🤝 Haraç ödendi. Bu kamp bir süre saldırmaz.');}else{c.raidAt=S.day+1;log('⛔ Yeterli altının yok! Haydutlar saldırıya hazırlanıyor.');}}},
+  {t:'Reddet',fn:()=>{c.raidAt=S.day+2;log('⚔ Haydutlar saldırıya hazırlanıyor! Savunmanı hazırla.');}}
+ ]);
 }
 function tributeDemand(){
  const amt=30+S.day*3+popNow()*2;
@@ -75,6 +93,7 @@ function declareWar(i){
 }
 function kingsDay(){
  S.kings.forEach((k,i)=>{
+  if(k.dead)return;
   const kg=KINGS[i];
   k.str=20+S.day*(kg.pers==='savasci'?2.2:1.3);
   if(k.pact)k.rel=Math.min(100,k.rel+0.3);else k.rel+=(0-k.rel)*0.01;
@@ -156,7 +175,7 @@ const EVENTS=[
  {w:1.5,ok:()=>seas()===1&&S.day>=14,fn:()=>{
   const l=Math.floor(S.res.food*0.08);S.res.food-=l;S.drought=Math.max(S.drought,3);log('🦗 Çekirge istilası! Ekinler zarar gördü: -'+l+' yiyecek, 3 gün verim düştü.');}},
  {w:1.5,ok:()=>S.day>=12&&S.res.food>=60,fn:()=>{
-  const k=ri(0,S.kings.length-1),K=KINGS[k];
+  const al=S.kings.map((x,i)=>i).filter(i=>!S.kings[i].dead);if(!al.length)return;const k=al[ri(0,al.length-1)],K=KINGS[k];
   showModal('🎩 Soylu misafir',K.who+'\'in akrabası köyünüze uğradı. Ziyafet verirsen komşuna iyi haber götürecek.',[
    {t:'Ziyafet ver (60 🍖 20 💰)',fn:()=>{if(S.res.food>=60&&S.res.gold>=20){S.res.food-=60;S.res.gold-=20;adjRel(k,10*fxm('dip'));S.happy=Math.min(100,S.happy+4);}}},
    {t:'Geç'}]);}},
@@ -198,17 +217,17 @@ function rollEvent(){
 
 // ---------- günlük işlemler ----------
 function onDay(){
- const d=S.day,s=seas(),sd=d%SEASON_DAYS;
+ const d=S.day,s=seas(),sd=seasonDay(d),last=sd===SL[s]-1;
  if(sd===0)log('🌤 Mevsim: '+SEASONS[s]+'.');
- if(s===2&&sd===SEASON_DAYS-1)log('❄ Kış yaklaşıyor! Odun ve yiyecek biriktir.');
+ if(s===2&&sd===SL[2]-4){const w=winterNeed();log('❄ Kışa 4 gün kaldı! '+SL[3]+' günlük kış için yaklaşık '+w.wood+' odun ve '+w.food+' yiyecek gerek.');}
  // mutluluk, hanedan, kış
  happyDay();
- if(d>0&&d%(SEASON_DAYS*4)===0)dynYear();
+ if(d>0&&d%YEARD===0)dynYear();
  if(s===0&&sd===0)S.hardWinter=false;
- if(s===2&&sd===SEASON_DAYS-1&&Math.random()<0.25){S.hardWinter=true;log('🌨 Yaşlılar sert bir kış geleceğini söylüyor: odun tüketimi artacak!');}
+ if(s===2&&last&&Math.random()<0.25){S.hardWinter=true;log('🌨 Yaşlılar sert bir kış geleceğini söylüyor: odun tüketimi artacak!');}
  // vergi & ticaret
  const pop=popNow();
- const tax=Math.floor(pop*0.1*(1+0.6*S.rank)*fxm('tax')*TAXG[S.taxRate]);
+ const tax=Math.floor(pop*0.17*(1+0.6*S.rank)*fxm('tax')*TAXG[S.taxRate]);
  if(tax>0)addRes('gold',tax);
  S.kings.forEach((k,i)=>{
   if(k.pact==='ticaret'){addRes('gold',Math.round(6*(1+k.rel/100)*fxm('trade')));if(d%3===0)addRes(['wood','stone','iron'][d%3?0:ri(0,2)],ri(10,25));}
@@ -236,6 +255,7 @@ function onDay(){
  if(d>=S.raidAt-1&&d<S.raidAt&&S.camps.some(c=>c.alive)&&Math.random()<0.5&&d>=7)tributeDemand();
  if(d>=S.raidAt)launchRaid();
  kingdomsDay();
+ campWatch();
  if(d%10===0&&S.camps.filter(c=>c.alive).length<12){makeCamps(S.camps.filter(c=>c.alive).length+3);}
  wildDay();
  // krallar & olaylar

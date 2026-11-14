@@ -36,6 +36,11 @@ jobs:
           npx cap add android
           npx cap sync android
 
+      - name: Uygulama simgesini yerleştir
+        run: |
+          cp -r assets/android-res/* android/app/src/main/res/
+          rm -f android/app/src/main/res/mipmap-anydpi-v26/*.xml.bak
+
       - name: Ekranı yatay/dikey serbest bırak ve tam ekran yap
         run: |
           sed -i 's/android:theme="@style\/AppTheme.NoActionBarLaunch"/android:theme="@style\/AppTheme.NoActionBarLaunch"\n            android:screenOrientation="sensor"/' android/app/src/main/AndroidManifest.xml || true
