@@ -116,7 +116,7 @@ function pactCount(){let n=0;S.kings.forEach(k=>{if(k.pact)n++;});return n;}
 function startResearch(id){
  const t=TECH[id];
  if(!t||S.techs[id]||S.research||t.age>S.age||!afford(t.cost)||(t.req&&!t.req.every(r=>S.techs[r])))return false;
- pay(t.cost);S.research={id,left:t.time};return true;
+ pay(t.cost);S.research={id,left:Math.round(t.time*1.5)};return true;
 }
 function ageInfo(){
  const n=S.age+1;if(n>=AGES.length)return null;
@@ -216,7 +216,8 @@ function canPlace(t,x,y){
  if(!inMap(x,y)||!inMap(x+d.w-1,y+d.h-1))return false;
  for(let dy=0;dy<d.h;dy++)for(let dx=0;dx<d.w;dx++){
   const i=(y+dy)*MW+x+dx;
-  if(T[i]!==0||OCC[i]!==0||FOG[i]===0)return false;
+  if(T[i]!==0||FOG[i]===0)return false;
+  if(OCC[i]!==0&&!(t==='kapi'&&BM.get(OCC[i])&&BM.get(OCC[i]).t==='duvar'&&BM.get(OCC[i]).team==='p'))return false;
  }
  // köylüleri/yolu kapalı bir boşluğa hapsetmesin
  if(S.founded&&!d.decor&&t!=='duvar'&&t!=='kapi'){
@@ -251,6 +252,7 @@ function placeBuilding(t,x,y){
  if(placeReason(t)||!canPlace(t,x,y))return false;
  if(!afford(d.cost)){log('⛔ Kaynak yetersiz.');return false;}
  pay(d.cost);
+ if(t==='kapi'){const w=BM.get(OCC[y*MW+x]);if(w&&w.t==='duvar'){for(const k in BT.duvar.cost)addRes(k,BT.duvar.cost[k]);const q=S.blds.indexOf(w);if(q>=0)S.blds.splice(q,1);BM.delete(w.id);fillOcc(w,0);}}
  const b=mkB(t,'p',x,y,t==='tc',t==='ev'?{fam:pick(MNAMES.concat(FNAMES))}:{});
  if(!b.done){b.need=(d.cost.wood||0)+(d.cost.stone||0)+(d.cost.iron||0);b.mat=0;}
  if(t==='maden')b.ore='stone';
@@ -281,6 +283,16 @@ function foundVillage(x,y){
  log('🏛 Köyünü kurdun! Önce ev ve depo inşa et, sonra halkı görevlendir.');
  balanceJobs();
  return true;
+}
+function cancelBuild(b){
+ if(!b||b.team!=='p'||b.done)return;
+ const f=b.prog<0.02?1:0.5,d=BT[b.t];
+ for(const k in d.cost)addRes(k,Math.floor(d.cost[k]*f));
+ const q=S.blds.indexOf(b);if(q>=0)S.blds.splice(q,1);
+ BM.delete(b.id);fillOcc(b,0);
+ for(const u of S.units)if(u.sb===b.id&&u.team==='p'){u.st='idle';u.path=null;u.sb=0;}
+ FX.push({k:'poof',x:b.x+b.w/2,y:b.y+b.h/2,t:0.5,T:0.5});
+ log('✖ '+d.n+' inşaatı iptal edildi'+(f<1?' (iade %50)':' (tam iade)')+'.');
 }
 function demolish(b){
  if(b.team!=='p'||b.t==='tc')return;

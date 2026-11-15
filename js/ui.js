@@ -46,7 +46,9 @@ function updHint(){
   $('hinttxt').textContent=(UI.place.mv?d.n+' taşı: yeni yeri seç':UI.place.t==='tc'&&!S.founded?'Köyün kurulacağı yeri seç':d.n+': yeri seç')+(UI.place.x==null?' (haritaya dokun)':'');
   $('hintbtn').innerHTML=btn('✔ Onayla','confirm')+btn('✖ İptal','cancel');
  }else if(UI.road){
-  hn.style.display='block';$('hinttxt').textContent=UI.wall?BT[UI.wall].n+': parmağını sürükleyerek hat çiz, kapı için tek tek dokun (kare başı '+Object.keys(BT[UI.wall].cost).map(k=>RI[k]+BT[UI.wall].cost[k]).join(' ')+')':'Yol: haritada parmağını sürükle (kare başı 1 odun)';$('hintbtn').innerHTML=btn('✖ Bitti','cancel');
+  hn.style.display='block';
+  if(UI.wall){const n=(UI.wsel||[]).length,c=BT.duvar.cost;$('hinttxt').textContent='Çit: parmağınla hattı çiz ('+n+' kare'+(n?' · '+Object.keys(c).map(k=>RI[k]+c[k]*n).join(' '):'')+'). Onaylayınca inşa edilir. Kapı için Yapılar\'dan Kapı seç.';$('hintbtn').innerHTML=btn('✔ İnşa et','wconfirm',null,!n)+btn('↩ Geri al','wundo',null,!n)+btn('✖ Çık','wexit');}
+  else{$('hinttxt').textContent='Yol: haritada parmağını sürükle (kare başı 1 odun)';$('hintbtn').innerHTML=btn('✖ Bitti','cancel');}
  }else hn.style.display='none';
 }
 function selInfo(){
@@ -182,6 +184,7 @@ function pSel(){
  const b=BM.get(UI.sel.id);if(!b)return '';
  const d=BT[b.t];
  let h='<h4>'+d.ic+' '+d.n+(b.done?'':' (inşaat %'+Math.round(b.prog*100)+')')+'</h4><small>'+d.d+'<br>❤ '+Math.ceil(b.hp)+'/'+b.mhp+(b.fire>0?' · 🔥 yanıyor':'')+'</small>';
+ if(b.team==='p'&&!b.done){h+='<div class="row">'+btn(b.pri?'⭐ Öncelik: AÇIK':'☆ Öncelikli inşa et','pri',b.id)+btn('✖ İptal ('+(b.prog<0.02?'tam iade':'%50 iade')+')','cancelb',b.id)+'</div><small>Öncelikli binayı işçiler ve taşıyıcılar diğerlerinden önce yapar.</small>';}
  if(b.team==='p'&&b.done&&(b.t==='oduncu'||b.t==='maden')){
   const jid=b.t==='oduncu'?'lum':'mine',have=jobCount(jid),mine=S.units.filter(u=>u.wb===b.id&&u.job===jid&&!u.dead).length;
   h+='<div>👷 Çalışan: <b>'+mine+'/'+SLOTS[b.t]+'</b> · 📦 Kulübe stoğu: '+Math.round(b.buf||0)+'/'+HUTCAP+' <small>(dolunca işçiler depoya taşır)</small></div>';
@@ -243,10 +246,13 @@ function act(a,v,w,el){
   case 'save':log(saveGame()?'💾 Oyun kaydedildi.':'⛔ Kaydedilemedi.');break;
   case 'found':UI.place={t:'tc',x:null,y:null};{const u=S.units.find(u=>u.team==='p');if(u){UI.place.x=Math.floor(u.x)-1;UI.place.y=Math.floor(u.y)+2;}}UI.tab=null;updPanel(true);updHint();break;
   case 'selall':UI.sel={kind:'u',ids:S.units.filter(u=>u.team==='p').map(u=>u.id)};break;
-  case 'place':if(v==='duvar'||v==='kapi'){UI.wall=v;UI.road=true;UI.place=null;UI.tab=null;updPanel(true);updHint();break;}UI.wall=null;UI.place={t:v,x:null,y:null};UI.road=false;UI.tab=null;updPanel(true);updHint();break;
+  case 'place':if(v==='duvar'){UI.wall=v;UI.road=true;UI.place=null;UI.tab=null;UI.wsel=[];UI.wstack=[];UI.wlx=null;updPanel(true);updHint();break;}UI.wall=null;UI.place={t:v,x:null,y:null};UI.road=false;UI.tab=null;updPanel(true);updHint();break;
   case 'confirm':doConfirm();break;
   case 'move':{const b=BM.get(+v);if(b&&b.done&&b.team==='p'&&b.t!=='tc'){UI.place={t:b.t,mv:b.id,x:b.x,y:b.y};UI.sel=null;UI.tab=null;updPanel(true);updHint();}break;}
-  case 'cancel':UI.place=null;UI.road=false;UI.wall=null;updHint();break;
+  case 'wconfirm':{let n=0,fail=0;for(const k of (UI.wsel||[])){const x=k%MW,y=(k/MW)|0;if(!canPlace('duvar',x,y)){fail++;continue;}if(!afford(BT.duvar.cost)){log('⛔ Kaynak yetersiz, '+(UI.wsel.length-n-fail)+' kare kaldı.');break;}if(placeBuilding('duvar',x,y))n++;}UI.wsel=[];UI.wstack=[];UI.road=false;UI.wall=null;log('🧱 '+n+' çit karesi inşaata başladı.');updHint();updPanel(true);break;}
+  case 'wundo':{const b=(UI.wstack||[]).pop();if(b)UI.wsel=UI.wsel.filter(k=>!b.includes(k));else UI.wsel=[];updHint();break;}
+  case 'wexit':UI.wsel=[];UI.wstack=[];UI.road=false;UI.wall=null;updHint();updPanel(true);break;
+  case 'cancel':UI.place=null;UI.road=false;UI.wall=null;UI.wsel=[];updHint();break;
   case 'road':UI.wall=null;UI.road=true;UI.place=null;UI.tab=null;updPanel(true);updHint();break;
   case 'train':{const b=BM.get(+w)||bestTrainer(v);if(b)enqueue(b,v,1);break;}
   case 'train5':{const b=BM.get(+w)||bestTrainer(v);if(b)enqueue(b,v,5);break;}
@@ -273,6 +279,8 @@ function act(a,v,w,el){
   case 'mk':{const b=BM.get(+v);if(b&&b.t==='demirci'){b.mk=w;log('⚒ Demirhane üretimi: '+({auto:'otomatik',alet:'alet',silah:'silah',zirh:'zırh',off:'durduruldu'})[w]+'.');}updPanel(true);break;}
   case 'ore':{const b=BM.get(+v);if(b&&b.t==='maden'){b.ore=w;for(const u of S.units)if(u.wb===b.id&&u.job==='mine'){u.ti=-1;u.carry=0;u.st='idle';u.path=null;}log('⛏ Madenci kulübesi artık '+RN[w]+' çıkaracak.');}updPanel(true);break;}
   case 'upg':{const b=BM.get(+v);if(b&&UPG[b.t]&&!b.lvl&&UPG[b.t].age<=S.age&&afford(UPG[b.t].cost)){pay(UPG[b.t].cost);b.lvl=1;b.hp=Math.max(b.hp,b.mhp);log('⬆ '+UPG[b.t].n+' tamamlandı.',b.x,b.y);}updPanel(true);break;}
+  case 'pri':{const b=BM.get(+v);if(b){b.pri=!b.pri;}updPanel(true);break;}
+  case 'cancelb':{const b=BM.get(+v);if(b){cancelBuild(b);UI.sel=null;}updPanel(true);break;}
   case 'demolish':{const b=BM.get(+v);if(b){demolish(b);UI.sel=null;}updPanel(true);break;}
  }
  buildBar();updPanel(true);

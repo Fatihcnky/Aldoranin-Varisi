@@ -61,7 +61,7 @@ function freeSlotBuilding(u,bt){
 }
 function haulSite(u){
  let best=null,bd=1e9;
- for(const b of S.blds){if(b.team!=='p'||b.done||!b.need||(b.mat||0)>=b.need-0.5)continue;const d=dEnt(u,b);if(d<bd){bd=d;best=b;}}
+ for(const b of S.blds){if(b.team!=='p'||b.done||!b.need||(b.mat||0)>=b.need-0.5)continue;const d=dEnt(u,b)-(b.pri?1e6:0);if(d<bd){bd=d;best=b;}}
  return best;
 }
 function haulStart(u){
@@ -101,7 +101,7 @@ function startJob(u){
   if(r===0){UNRE[i]=S.t+40;u.ti=-1;u.wait=0.2;return;}
   u.st='toRes';
  }else if(j==='build'){
-  let s=nearestB(u,b=>b.team==='p'&&!b.done);
+  let s=nearestB(u,b=>b.team==='p'&&!b.done&&b.pri)||nearestB(u,b=>b.team==='p'&&!b.done);
   if(!s)s=nearestB(u,b=>b.team==='p'&&b.done&&b.hp<b.mhp*0.9&&!b.decor);
   if(!s){u.wait=1.5;return;}
   u.sb=s.id;
@@ -247,7 +247,7 @@ function finishB(b){
 
 // ---------- savaş ----------
 function dmgOf(a,e){
- const d=UT[a.t];let atk=d.atk+(a.atkB||0);
+ const d=UT[a.t];let atk=(d.atk+(a.atkB||0))*(a.ds?1+(a.ds-1)*0.6:1);
  if(a.team==='p'||a.team==='a'){atk*=fxm('atk');if(!d.hero&&S.units.some(h=>h.t==='kahraman'&&!h.dead&&Math.abs(h.x-a.x)<7&&Math.abs(h.y-a.y)<7))atk*=1.15;}
  if(e.w){
   if(!d.siege)atk*=0.45;
@@ -276,7 +276,11 @@ function destroyB(b,a){
  const k=S.blds.indexOf(b);if(k>=0)S.blds.splice(k,1);
  BM.delete(b.id);fillOcc(b,0);
  FX.push({k:'rubble',x:b.x+b.w/2,y:b.y+b.h/2,t:2,T:2});
- if(b.t==='tent'){
+ if(b.t==='karakale'){
+  S.sf=S.sf||{};S.sf.maldricDead=1;
+  if(a&&(a.team==='p'||a.team==='a')){addRes('gold',1500);}
+  showModal('🏆 Zafer! Kara Kale Düştü','Kara Kale yıkıldı ve Lord Maldric\'in bayrağı sökülüp ateşe verildi. Aldora\'nın halkı sokaklarda sevinç çığlıkları atıyor.\n\nBertram titreyen elleriyle babanın yüzüğünü parmağına geçiriyor: "Taç artık gerçekten senin."\n\nOyunu tamamladın! İstersen krallığını yönetmeye devam edebilirsin: komşu krallıklar, ticaret ve yeni tehditler seni bekliyor. (+1500 altın)',[{t:'Krallığa devam'}]);
+ }else if(b.t==='tent'){
   const c=S.camps.find(c=>c.tent===b.id);
   if(c){
    c.alive=false;

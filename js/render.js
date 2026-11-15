@@ -12,7 +12,7 @@ function spr(g){
 const IMGS={};
 (function(){
  const names=['e_deco05','e_deco07','e_deco13','e_deco14','t_grass1','t_grass2','t_water1','t_water2','t_snow1','t_snow2','t_road','e_tree1','e_tree2','e_tree3','e_tree4','e_stone','e_iron','e_gold','e_berry','e_fire'];
- Object.keys(BT).forEach(k=>names.push('s_'+k));
+ Object.keys(BT).forEach(k=>{if(k!=='duvar'&&k!=='kapi')names.push('s_'+k);});['duvar','kapi'].forEach(k=>['h','v','d1','d2'].forEach(t=>names.push('s_'+k+'_'+t)));
  [1,2,3,4,7,8,9,10,13,14,15,19,20,21,23].forEach(n=>names.push('u'+String(n).padStart(2,'0')));
  names.forEach(n=>{const i=new Image();i.src='img/'+n+'.png';IMGS[n]=i;});
 })();
@@ -145,6 +145,8 @@ function draw(){
   else if(f.k==='rubble'){ctx.globalAlpha=a;ctx.fillStyle='#555';ctx.beginPath();ctx.arc(f.x,f.y,1.2*(1-a)+0.4,0,6.3);ctx.fill();ctx.globalAlpha=1;}
   else if(f.k==='poof'){ctx.globalAlpha=a;ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(f.x,f.y,(1-a)*1.2,0,6.3);ctx.fill();ctx.globalAlpha=1;}
  }
+ // çit önizlemesi
+ if(UI.wall&&UI.wsel){const im=img('s_duvar_h');ctx.globalAlpha=0.55;for(const k of UI.wsel){const x=k%MW,y=(k/MW)|0;ctx.fillStyle='#4caf50';ctx.fillRect(x+0.05,y+0.05,0.9,0.9);if(im)ctx.drawImage(im,x-0.125,y-0.125,1.25,1.25);}ctx.globalAlpha=1;}
  // yerleştirme hayaleti
  const P=UI.place;
  if(P&&P.x!=null){
@@ -156,6 +158,7 @@ function draw(){
  }
  // etiketler
  KINGS.forEach((k,i)=>{if(S.kings[i].dead||fogAt(k.x,k.y)===0)return;const kk=S.kings[i];const st=kk.war?'⚔':kk.pact==='ittifak'?'🤝':kk.pact?'📜':'';text(k.n+' '+st,k.x,k.y-3.2,12,'#fff');});
+ if(S.sf&&S.sf.fort&&!S.sf.maldricDead&&fogAt(S.sf.fort.x,S.sf.fort.y)>=1)text('Kara Kale',S.sf.fort.x+2,S.sf.fort.y-0.4,13,'#ff5252');
  S.camps.forEach(c=>{if(c.alive&&fogAt(c.x,c.y)>=1&&c.x>=xa-2&&c.x<=xb+2&&c.y>=ya-2&&c.y<=yb+2)text('Haydut Kampı',c.x+1,c.y-0.4,11,'#ff8a80');});
  // gece ışıkları
  {const td=(S.t%DAY)/DAY;if(td>0.78||td<0.06){ctx.globalCompositeOperation='lighter';for(const b of S.blds){if(!b.done||!LIGHT[b.t]||!vis(b))continue;const g=ctx.createRadialGradient(b.x+b.w/2,b.y+b.h/2,0.1,b.x+b.w/2,b.y+b.h/2,2.2);g.addColorStop(0,'rgba(255,200,90,0.35)');g.addColorStop(1,'rgba(255,200,90,0)');ctx.fillStyle=g;ctx.fillRect(b.x-2,b.y-2,b.w+4,b.h+4);}ctx.globalCompositeOperation='source-over';}}

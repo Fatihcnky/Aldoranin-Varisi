@@ -91,12 +91,12 @@ function killKingdom(i){
 function reviveKingdom(i){
  const k=S.kings[i],K=KINGS[i];
  kInit(i);k.rel=10;k.pact=null;k.war=false;k.cool=0;
- showModal('👑 Yeni krallık','Haydutların yıktığı '+K.n+' küllerinden doğdu: hayatta kalanlar toplanıp yeni bir hanedan kurdu ('+K.who+' ailesinden biri tahta çıktı). Yeni komşuyla ilişkiler sıfırdan başlıyor.',[{t:'Hayırlı olsun'}]);
+ showModal('👑 Yeni krallık','Yıkılan '+K.n+' küllerinden doğdu: hayatta kalanlar toplanıp yeni bir hanedan kurdu ('+K.who+' ailesinden biri tahta çıktı). Yeni komşuyla ilişkiler sıfırdan başlıyor.',[{t:'Hayırlı olsun'}]);
 }
 function kingdomsDay(){
- if(aliveKings()<3){
-  const c=S.kings.map((k,i)=>({k,i})).filter(o=>o.k.dead&&o.k.fall==='b'&&S.day-o.k.deadDay>=12);
-  if(c.length&&Math.random()<0.4)reviveKingdom(c[0].i);
+ if(aliveKings()<4){
+  const c=S.kings.map((k,i)=>({k,i})).filter(o=>o.k.dead&&S.day-o.k.deadDay>=(o.k.fall==='b'?12:16));
+  if(c.length&&Math.random()<0.45)reviveKingdom(c[0].i);
  }
  KINGS.forEach((K,i)=>{
   const kd=kdOf(i),k=S.kings[i];

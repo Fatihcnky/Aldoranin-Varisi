@@ -2,11 +2,11 @@
 // ===== MINIFOLKS SPRITE ANİMASYONLARI (32x32 kareli sayfalar) =====
 // Satırlar: 0 bekle(4), 1 yürü(6), 2 eylem(3: saldırı/çalışma). Atlılarda eylem satırı 3.
 const MF={},MFT=new Map();
-const MFN=['VillagerMan','VillagerWoman','Peasant','Worker','OldMan','OldWoman','NobleMan','NobleWoman','Princess','Queen','SpearMan','SwordMan','ArcherMan','CrossBowMan','HalberdMan','ShieldMan','CavalierMan','HorseMan','KingMan','PrinceMan'];
+const MFN=['VillagerMan','VillagerWoman','Peasant','Worker','OldMan','OldWoman','NobleMan','NobleWoman','Princess','Queen','SpearMan','SwordMan','ArcherMan','MountedArcher','CrossBowMan','HalberdMan','ShieldMan','CavalierMan','HorseMan','KingMan','PrinceMan'];
 MFN.forEach(n=>{const i=new Image();i.src='img/mf/Mini'+n+'.png';MF[n]=i;});
-const MFCNT={KingMan:[4,5,6],CavalierMan:[8,6,3],HorseMan:[8,6,3],PrinceMan:[4,6,5]};
+const MFCNT={MountedArcher:[8,6,3],KingMan:[4,5,6],CavalierMan:[8,6,3],HorseMan:[8,6,3],PrinceMan:[4,6,5]};
 const MFVIL=['VillagerMan','VillagerWoman','Peasant','Worker','VillagerMan','VillagerWoman','OldMan','OldWoman'];
-const MFSOL={mizrakli:'SpearMan',kilic:'SwordMan',okcu:'ArcherMan',atliokcu:'HorseMan',atli:'CavalierMan',top:'HalberdMan'};
+const MFSOL={mizrakli:'SpearMan',kilic:'SwordMan',okcu:'ArcherMan',atliokcu:'MountedArcher',atli:'CavalierMan',top:'HalberdMan'};
 const MFB={haydut:'SwordMan',haydutokcu:'CrossBowMan',haydutatli:'CavalierMan',haydutreis:'ShieldMan'};
 function mfSheet(name,tint,al){
  const im=MF[name];if(!im||!im.complete||!im.naturalWidth)return null;
@@ -58,7 +58,7 @@ drawUnit=function(u){
  if(u.t==='top')return drawCannon(u);
  const lk=mfLook(u),sh=lk?mfSheet(lk[0],lk[1],lk[2]):null;
  if(!sh)return _drawUnitOld(u);
- const name=lk[0],mounted=name==='CavalierMan'||name==='HorseMan';
+ const name=lk[0],mounted=name==='CavalierMan'||name==='HorseMan'||name==='MountedArcher';
  // yön ve hareket
  const dx=u.x-(u.lx==null?u.x:u.lx);if(Math.abs(dx)>0.002)u.fdir=dx<0?-1:1;
  const moved=Math.hypot(dx,u.y-(u.ly==null?u.y:u.ly))>0.002;u.lx=u.x;u.ly=u.y;
@@ -78,14 +78,6 @@ drawUnit=function(u){
  ctx.imageSmoothingEnabled=false;
  ctx.drawImage(sh,fr*32,row*32,32,32,-size/2,0,size,size);
  if(u.fl&&S.t-u.fl<0.15){ctx.globalAlpha=0.4;ctx.fillStyle='#fff';ctx.fillRect(-size*0.2,size*0.35,size*0.4,size*0.55);ctx.globalAlpha=1;}
- if(u.t==='atliokcu'){ // atlı okçu: yay çiz
-  ctx.save();ctx.translate(-size/2,0);ctx.scale(size/32,size/32);
-  const pull=attacking?3:0;
-  ctx.strokeStyle='#5b3a1a';ctx.lineWidth=1.6;ctx.beginPath();ctx.arc(21,15,5.5,-1.15,1.15);ctx.stroke();
-  ctx.strokeStyle='#e8e0c8';ctx.lineWidth=0.7;ctx.beginPath();ctx.moveTo(21+5.5*Math.cos(-1.15),15+5.5*Math.sin(-1.15));ctx.lineTo(21-pull,15);ctx.lineTo(21+5.5*Math.cos(1.15),15+5.5*Math.sin(1.15));ctx.stroke();
-  if(attacking){ctx.strokeStyle='#d8c8a0';ctx.lineWidth=0.9;ctx.beginPath();ctx.moveTo(21-pull,15);ctx.lineTo(29,15);ctx.stroke();}
-  ctx.restore();
- }
  ctx.restore();
  if(u.st==='sleep')ctx.drawImage(spr('💤'),u.x+0.1,u.y-0.9,0.5,0.5);
  if(u.wnd)ctx.drawImage(spr('🩹'),u.x+0.1,u.y-0.9,0.5,0.5);
@@ -93,4 +85,36 @@ drawUnit=function(u){
  if(u.hp<u.mhp){ctx.fillStyle='#000a';ctx.fillRect(u.x-0.3,top-0.05,0.6,0.1);ctx.fillStyle=u.hp/u.mhp>0.4?'#4caf50':'#e53935';ctx.fillRect(u.x-0.3,top-0.05,0.6*u.hp/u.mhp,0.1);}
  if(u.team==='p'&&u.t==='koylu'&&S.founded&&u.job){const j=JOBS.find(j=>j.id===u.job);if(j)ctx.drawImage(spr(j.ic),u.x+0.2,u.y-0.95,0.36,0.36);}
  if(u.carry>0.5)ctx.drawImage(spr('📦'),u.x-0.6,u.y-0.15,0.32,0.32);
+};
+
+// ===== ÇİT / KAPI: komşulara göre yön seçimi =====
+function wallAt(x,y){
+ if(!inMap(x,y))return false;const id=OCC[y*MW+x];if(!id)return false;
+ const o=BM.get(id);return !!(o&&(o.t==='duvar'||o.t==='kapi')&&o.team==='p');
+}
+const _drawBuildingOld=drawBuilding;
+drawBuilding=function(b){
+ if(b.t!=='duvar'&&b.t!=='kapi'){_drawBuildingOld(b);
+  if((b.t==='agil'||b.t==='ahir')&&b.done&&b.team==='p'){
+   const an=b.t==='agil'?['🐑','🐑','🐏']:['🐎','🐄','🐎'],T2=(S.t||0)*0.6+b.id;
+   an.forEach((e,i)=>{const ax=b.x+b.w*(0.55+0.2*Math.sin(T2+i*2.1))-0.17,ay=b.y+b.h*(0.62+0.12*Math.cos(T2*0.8+i*1.7))-0.17;ctx.drawImage(spr(e),ax,ay,0.34,0.34);});
+  }if(b.pri&&!b.done)ctx.drawImage(spr('⭐'),b.x+b.w-0.5,b.y,0.5,0.5);return;}
+ const x=b.x,y=b.y,L=wallAt(x-1,y),R=wallAt(x+1,y),U=wallAt(x,y-1),D=wallAt(x,y+1);
+ let tags=[];
+ if(L||R)tags.push('h');
+ if(U||D){if(b.t==='kapi'&&tags.length===0)tags.push('v');else if(b.t!=='kapi')tags.push('v');}
+ if(!tags.length){
+  const a=wallAt(x-1,y-1),c=wallAt(x+1,y+1),e=wallAt(x+1,y-1),f=wallAt(x-1,y+1);
+  if(a||c)tags.push('d1');else if(e||f)tags.push('d2');else tags.push('h');
+ }
+ ctx.globalAlpha=b.done?1:0.5;
+ for(const tg of tags){
+  const im=img('s_'+b.t+'_'+tg);
+  if(im)ctx.drawImage(im,x-0.125,y-0.125,1.25,1.25);
+  else{ctx.fillStyle='#8a5a2a';ctx.fillRect(x+0.1,y+0.1,0.8,0.8);}
+ }
+ ctx.globalAlpha=1;
+ if(b.team==='p'){ctx.fillStyle=TEAMCOL.p;ctx.fillRect(x+0.04,y+0.04,0.16,0.16);}
+ if(b.pri){ctx.drawImage(spr('⭐'),x,y,0.45,0.45);}
+ if(!b.done){ctx.fillStyle='#000a';ctx.fillRect(x+0.1,y+0.8,0.8,0.14);ctx.fillStyle='#ffd23c';ctx.fillRect(x+0.1,y+0.8,0.8*b.prog,0.14);}
 };

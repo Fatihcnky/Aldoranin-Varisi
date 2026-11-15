@@ -56,6 +56,7 @@ const BT={
  hastane:{n:'Hastane',ic:'🏥',w:3,h:3,hp:260,age:2,cost:{wood:120,stone:120,gold:40},time:24,col:'#d8d8d8',d:'Şifacılar yaralıları iyileştirir, salgında can kaybını azaltır.'},
  elcilik:{n:'Elçilik',ic:'🕊',w:3,h:3,hp:260,age:1,cost:{wood:120,stone:100,gold:50},time:24,col:'#5b7fb0',d:'Komşu krallarla diplomasi yapmanı sağlar.'},
  saray:{n:'Saray',ic:'👑',w:4,h:4,hp:1000,age:3,rank:3,cost:{stone:500,gold:300,wood:300},time:60,pop:20,col:'#c9a227',d:'Krallık ünvanı için gerekli.'},
+ karakale:{n:'Kara Kale',ic:'🏯',w:4,h:4,hp:6000,arm:1,cost:{},time:0,col:'#3a1a1a',enemy:1,d:'Lord Maldric\'in son kalesi. Yıkılırsa tahtın gerçek sahibi sen olursun.'},
  tent:{n:'Haydut Çadırı',ic:'⛺',w:2,h:2,hp:220,cost:{},time:0,col:'#6a2a2a',enemy:1},
  ktc:{n:'Krallık Merkezi',ic:'🏰',w:4,h:4,hp:1,col:'#777',decor:1},
  ftc:{n:'Krallık Merkezi',ic:'🏰',w:4,h:4,hp:1800,col:'#777',foreign:1},
@@ -130,6 +131,9 @@ const RANKREQ=[null,
  {houses:28,pop:80,age:3,b:['kale','elcilik'],reward:{gold:500,stone:300}},
  {houses:42,pop:120,age:3,b:['saray'],reward:{gold:1000}}
 ];
+// ilerleme yavaşlatma (oyun uzasın)
+AGEUP.forEach(a=>{if(!a)return;a.time=Math.round(a.time*1.5);a.pop=Math.round(a.pop*1.25);a.houses=Math.round(a.houses*1.2);for(const k in a.cost)a.cost[k]=Math.round(a.cost[k]*1.35);});
+RANKREQ.forEach(r=>{if(!r)return;r.pop=Math.round(r.pop*1.25);r.houses=Math.round(r.houses*1.2);});
 const KINGS=[
  {n:'Kuzey Lordluğu',who:'Lord Aldric',x:112,y:24,pers:'bilge',col:'#4a7fd0',d:'Bilge ve temkinli bir lord.',fam:['Leydi Mirel','Lord Cedric']},
  {n:'Doğu Krallığı',who:'Kral Maran',x:200,y:112,pers:'savasci',col:'#d04a4a',d:'Savaşçı, kolay öfkelenir.',fam:['Prenses Valeria','Prens Borin']},
@@ -158,5 +162,6 @@ const STORY=[
  {ch:'Bölüm 6 — Orta Çağ',t:"Orta Çağ'a geç ve bir komşuyla ittifak kur.",ok:()=>S.age>=3&&S.kings.some(k=>k.pact==='ittifak'),r:{gold:250},m:'Dostların çoğaldı, düşmanların saygı duymaya başladı.'},
  {t:'"Lordluk" ünvanını kazan.',ok:()=>S.rank>=3,r:{gold:400},m:'Artık topraklarının efendisisin.'},
  {t:'Nüfusunu 100\'e çıkar.',ok:()=>popNow()>=100,r:{gold:300,food:300},m:'Yüz kişi... Bir zamanlar küçücük bir kafile olan halkın artık bir şehir kadar kalabalık.'},
- {ch:'Final — Taç',t:'Krallığını ilan et: "Krallık" ünvanına yüksel.',ok:()=>S.rank>=4,m:'Taç giydin. Sürgünden krallığa uzanan yol tamamlandı! Hanedanın tarihe geçti.'}
+ {ch:'Final — Taç',t:'Krallığını ilan et: "Krallık" ünvanına yüksel.',ok:()=>S.rank>=4,m:'Taç giydin ama Maldric hâlâ ayakta...'},
+ {ch:'Son — Kara Kale',t:'Haritanın uzak köşesindeki Maldric\'in Kara Kale\'sini yık. Güçlü bir ordu ve toplar getir!',ok:()=>S.sf&&S.sf.maldricDead,m:'Maldric düştü, taç sonunda gerçek sahibinde. Aldora yeniden doğdu!'}
 ];

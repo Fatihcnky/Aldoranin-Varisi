@@ -20,7 +20,7 @@ cv.addEventListener('pointerdown',e=>{
  cv.setPointerCapture(e.pointerId);
  if(UI.box&&e.isPrimary&&!UI.place&&!UI.road){boxS={x:e.clientX,y:e.clientY};const r=$('selrect');r.style.display='block';r.style.left=e.clientX+'px';r.style.top=e.clientY+'px';r.style.width='0';r.style.height='0';return;}
  ptr.set(e.pointerId,{x:e.clientX,y:e.clientY});
- if(ptr.size===1){tapInfo={x:e.clientX,y:e.clientY,t:performance.now(),moved:false};painting=!!UI.road;if(painting)paintRoad(e.clientX,e.clientY);}
+ if(ptr.size===1){tapInfo={x:e.clientX,y:e.clientY,t:performance.now(),moved:false};painting=!!UI.road;if(painting){if(UI.wall){UI.wlx=null;UI.wbatch=[];(UI.wstack=UI.wstack||[]).push(UI.wbatch);}paintRoad(e.clientX,e.clientY);}}
  else{tapInfo=null;painting=false;const p=[...ptr.values()];pinch=Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y);}
 });
 cv.addEventListener('pointermove',e=>{
@@ -57,9 +57,15 @@ function paintRoad(px,py){
  const t=toTile(px,py),x=Math.floor(t.x),y=Math.floor(t.y);
  if(!inMap(x,y))return;
  if(UI.wall){
-  const wt=UI.wall;if(!S.founded||OCC[y*MW+x]||!canPlace(wt,x,y))return;
-  if(!afford(BT[wt].cost)){log('⛔ Kaynak yetersiz.');painting=false;return;}
-  placeBuilding(wt,x,y);return;
+  if(!S.founded)return;
+  UI.wsel=UI.wsel||[];
+  let pts=[[x,y]];
+  if(UI.wlx!=null&&(Math.abs(x-UI.wlx)>1||Math.abs(y-UI.wly)>1)){
+   pts=[];const n=Math.max(Math.abs(x-UI.wlx),Math.abs(y-UI.wly));
+   for(let i=1;i<=n;i++)pts.push([Math.round(UI.wlx+(x-UI.wlx)*i/n),Math.round(UI.wly+(y-UI.wly)*i/n)]);
+  }
+  for(const [px,py] of pts){const k=py*MW+px;if(!inMap(px,py)||OCC[k]||UI.wsel.includes(k)||!canPlace('duvar',px,py))continue;UI.wsel.push(k);if(UI.wbatch)UI.wbatch.push(k);}
+  UI.wlx=x;UI.wly=y;updHint();return;
  }
  const i=y*MW+x;
  if(ROAD[i]||T[i]===1||OCC[i]||(T[i]>=3&&T[i]<=5))return;
