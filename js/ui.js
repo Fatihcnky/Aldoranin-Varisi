@@ -153,9 +153,10 @@ function pDyn(){
  let h='<h4>👑 Hane '+D.house+'</h4>';
  h+='<div><b>'+rulerTitle()+' '+r.name+'</b> ('+r.age+') — '+TRAITS[r.trait].n+'<br><small>'+TRAITS[r.trait].d+'</small></div>';
  h+='<div class="row">'+(heroOf('ruler')?btn('🏠 Saraya çağır','unhero','ruler'):btn('⚔ Orduya çağır','hero','ruler',!mainTC()))+'<small>Hükümdar komutan olur: yakındaki askerlere +%15 saldırı, öldürdükçe seviye atlar. Savaşta düşerse tahtı kaybedersin!</small></div>';
+ h+=heroBox('ruler',r);
  h+=D.spouse?'<div style="margin-top:4px">💍 Eş: <b>'+D.spouse.name+'</b> ('+D.spouse.age+') — '+KINGS[D.spouse.from].n+'</div>':'<div style="margin-top:4px"><small>💍 Evli değilsin. Komşu hanedanlarla ilişkiyi artır, evlilik teklifi gelebilir ya da Diplomasi\'den teklif et.</small></div>';
  h+='<div style="margin-top:4px">👶 Varisler: '+(D.heirs.length?D.heirs.map(x=>x.name+' ('+x.age+', '+TRAITS[x.trait].n+')').join(' · '):'<small>yok</small>')+'</div>';
- D.heirs.filter(x=>x.age>=16).forEach(x=>{h+='<div class="row">'+(heroOf('heir:'+x.name)?btn('🏠 '+x.name+' saraya','unhero','heir:'+x.name):btn('⚔ '+x.name+' orduya','hero','heir:'+x.name,!mainTC()))+'<small>Varis komutan olarak savaşabilir.</small></div>';});
+ D.heirs.filter(x=>x.age>=16).forEach(x=>{h+='<div class="row">'+(heroOf('heir:'+x.name)?btn('🏠 '+x.name+' saraya','unhero','heir:'+x.name):btn('⚔ '+x.name+' orduya','hero','heir:'+x.name,!mainTC()))+'<small>Varis komutan olarak savaşabilir.</small></div>'+heroBox('heir:'+x.name,x);});
  if(D.crisis>0)h+='<div style="color:#ff8a80">⚠ Hanedan krizi sürüyor.</div>';
  const hp=Math.round(S.happy);
  h+='<h4>🙂 Halk mutluluğu: '+hp+' '+bar(hp/100)+'</h4><small>'+(hp>=65?'Göçmenler gelir, verim yüksek.':hp<20?'Halk isyana yakın!':'Verim: x'+happyMul().toFixed(2))+'</small>';
@@ -270,6 +271,7 @@ function act(a,v,w,el){
   case 'sell':sellRes(v,50);break;
   case 'buy':buyRes(v,50);break;
   case 'tax':setTax();break;
+  case 'hskill':heroSkill(v,w);updPanel(true);break;
   case 'hero':summonHero(v);break;
   case 'unhero':dismissHero(v);break;
   case 'fest':holdFestival();break;

@@ -81,14 +81,37 @@ function holdFestival(){
 
 // ---- kahramanlar ----
 function personOf(who){const D=S.dyn;return who==='ruler'?D.ruler:D.heirs.find(h=>h.name===who.slice(5));}
+// ---- kahraman seviye ve yetenekleri ----
+const HSK={komuta:{n:'Komuta',d:'Yakındaki askerlere +%5 saldırı (her seviye)'},dayan:{n:'Dayanıklılık',d:'Kahraman canı +%20 (her seviye)'},usta:{n:'Silah Ustası',d:'Kahraman hasarı +%15 (her seviye)'}};
+function hxpNeed(lv){return 6+lv*4;}
+function heroPer(u){return u&&u.who?personOf(u.who):null;}
+function heroApply(u){
+ const p=heroPer(u);if(!p)return;const sk=p.sk||{},lv=p.lv||1;
+ const mhp=Math.round((UT.kahraman.hp+(p.trait==='savasci'?40:0)+(lv-1)*12)*(1+0.2*(sk.dayan||0)));
+ const r=u.mhp?u.hp/u.mhp:1;u.mhp=mhp;u.hp=Math.min(mhp,Math.max(1,mhp*r));
+ u.atkB=(p.trait==='cesur'?3:0)+(lv-1)*1+UT.kahraman.atk*0.15*(sk.usta||0);
+}
+function heroGain(u,xp){
+ const p=heroPer(u);if(!p)return;
+ p.lv=p.lv||1;p.sp=p.sp||0;p.xp=(p.xp||0)+xp;
+ while(p.lv<10&&p.xp>=hxpNeed(p.lv)){p.xp-=hxpNeed(p.lv);p.lv++;p.sp++;log('⭐ '+p.name+' seviye atladı: Sv.'+p.lv+'! Hanedan menüsünden yetenek seç.',u.x,u.y);heroApply(u);if(typeof sfx==='function')sfx('fan');}
+ if(p.lv>=10)p.xp=0;
+}
+function heroBox(who,p){
+ if(!p)return'';const lv=p.lv||1,sk=p.sk||{};
+ let h='<div class="hb" style="margin:3px 0 6px;font-size:12px">⭐ <b>Sv.'+lv+(lv>=10?' (maks)':'')+'</b>'+(lv<10?' · XP '+(p.xp||0)+'/'+hxpNeed(lv):'')+(p.sp?' · <b style="color:#ffd88a">'+p.sp+' yetenek puanı</b>':'');
+ h+='<div class="row">'+Object.keys(HSK).map(k=>{const l=sk[k]||0;return btn(HSK[k].n+' '+l+'/3'+(p.sp&&l<3?' ➕':''),'hskill',who,!(p.sp>0&&l<3),k);}).join('')+'</div>';
+ h+='<small>'+Object.keys(HSK).map(k=>HSK[k].n+': '+HSK[k].d).join(' · ')+'</small></div>';
+ return h;
+}
+function heroSkill(who,k){const p=personOf(who);if(!p||!HSK[k]||!(p.sp>0))return;p.sk=p.sk||{};if((p.sk[k]||0)>=3)return;p.sk[k]=(p.sk[k]||0)+1;p.sp--;const h=heroOf(who);if(h)heroApply(h);log('✨ '+p.name+': '+HSK[k].n+' '+p.sk[k]+'/3');}
 function heroOf(who){return S.units.find(u=>u.t==='kahraman'&&!u.dead&&u.who===who);}
 function summonHero(who){
  const per=personOf(who),tc=mainTC();
  if(!per||per.age<16||heroOf(who)||!tc)return false;
  if(popNow()+popQueued()>=popCap()){log('⛔ Barınak yetersiz.');return false;}
  const p=spawnPos(tc),u=mkUnit('kahraman','p',p.x,p.y,{who,hn:per.name,st:'idle'});
- if(per.trait==='savasci'){u.mhp+=40;u.hp=u.mhp;}
- if(per.trait==='cesur')u.atkB=3;
+ u.hp=u.mhp=UT.kahraman.hp;heroApply(u);u.hp=u.mhp;
  log('👑 '+per.name+' orduya katıldı!',p.x,p.y);return true;
 }
 function dismissHero(who){const h=heroOf(who);if(h){h.dead=1;UM.delete(h.id);log('🏠 '+h.hn+' saraya döndü.');}}

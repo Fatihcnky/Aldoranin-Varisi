@@ -248,7 +248,7 @@ function finishB(b){
 // ---------- savaş ----------
 function dmgOf(a,e){
  const d=UT[a.t];let atk=(d.atk+(a.atkB||0))*(a.ds?1+(a.ds-1)*0.6:1);
- if(a.team==='p'||a.team==='a'){atk*=fxm('atk');if(!d.hero&&S.units.some(h=>h.t==='kahraman'&&!h.dead&&Math.abs(h.x-a.x)<7&&Math.abs(h.y-a.y)<7))atk*=1.15;}
+ if(a.team==='p'||a.team==='a'){atk*=fxm('atk');if(!d.hero){const hh=S.units.find(h=>h.t==='kahraman'&&!h.dead&&Math.abs(h.x-a.x)<7&&Math.abs(h.y-a.y)<7);if(hh){const pp=heroPer(hh);atk*=1.15+0.05*((pp&&pp.sk&&pp.sk.komuta)||0);}}}
  if(e.w){
   if(!d.siege)atk*=0.45;
   return Math.max(1,atk-(BT[e.t].arm||0));
@@ -266,7 +266,7 @@ function killU(u,a){
   if(u.who==='ruler')succession('savaşta düştü');
   else{const hn=u.who.slice(5);S.dyn.heirs=S.dyn.heirs.filter(h=>h.name!==hn);S.happy=Math.max(0,S.happy-10);log('⚰ Varis '+hn+' savaşta düştü!');}
  }
- if(a&&a.t==='kahraman'&&(u.team==='b'||u.team==='k')){a.xp=(a.xp||0)+1;if(a.xp%4===0){a.mhp+=15;a.hp=Math.min(a.mhp,a.hp+30);a.atkB=(a.atkB||0)+1;log('⭐ '+a.hn+' seviye atladı!');}}
+ if(a&&a.t==='kahraman'&&(u.team==='b'||u.team==='k'||u.team==='f'))heroGain(a,UT[u.t]&&UT[u.t].hero?10:(['haydutreis','haydutatli','atli'].includes(u.t)?2:1));
  FX.push({k:'skull',x:u.x,y:u.y,t:1,T:1});
  if(u.team==='b'||u.team==='k')S.stats.kills++;
  if(u.team==='p'){S.stats.lost++;S.recentLoss=(S.recentLoss||0)+1;if(S.t-lastLogLoss>3){lastLogLoss=S.t;log('💀 '+UT[u.t].n+' öldü.',u.x,u.y);}}
@@ -284,6 +284,7 @@ function destroyB(b,a){
   const c=S.camps.find(c=>c.tent===b.id);
   if(c){
    c.alive=false;
+   if(a&&a.t==='kahraman')heroGain(a,10);
    if(a&&(a.team==='p'||a.team==='a')){S.stats.camps++;
    const g=ri(60,150),f=ri(30,80);addRes('gold',g);addRes('food',f);
    log('🏴 Haydut kampı yıkıldı! Ganimet: +'+g+' altın, +'+f+' yiyecek.',b.x,b.y);}

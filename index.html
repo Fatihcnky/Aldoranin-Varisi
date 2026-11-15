@@ -27,6 +27,19 @@ button.dis{opacity:.4}
 #panel h4{margin:6px 0 2px;font-size:14px}
 .bar{height:6px;background:#333;border-radius:3px;overflow:hidden;width:90px;display:inline-block;vertical-align:middle}
 .bar i{display:block;height:100%;background:#7ac14a}
+#menu,#diffscr{position:absolute;inset:0;display:none;align-items:center;justify-content:center;padding:12px;overflow:auto;z-index:30;background:radial-gradient(ellipse at 50% 30%,#2c3b1f,#0c120a)}
+#diffscr{z-index:25;background:#0009}
+#menu .mbox{text-align:center;max-width:380px;width:100%}
+#menu h1{margin:0 0 2px;font-size:34px;color:#ffd88a;text-shadow:0 3px 0 #000}
+.sub{margin:0 0 14px;color:#cdbb8a;font-size:13px}
+.mb2{display:block;width:100%;margin:8px 0;padding:14px;font-size:17px;font-weight:700;border-radius:12px;background:#3d5a26;color:#fff;border:2px solid #c9a34a}
+.mb2[disabled]{opacity:.4}
+.mb2 small{display:block;font-weight:400;font-size:11px;color:#dde7c8}
+#diffscr .box{background:#1d2616;border:2px solid #c9a34a;border-radius:12px;padding:12px;max-width:520px;width:100%;max-height:100%;overflow:auto}
+#diffscr h3{margin:0 0 4px}
+.dc{display:block;text-align:left;width:100%;margin:8px 0;padding:10px;border-radius:10px;background:#2a3a1c;border:2px solid #6b8a45;color:#fff}
+.dc b{font-size:17px}.dc small{display:block;color:#cdbb8a;margin-bottom:4px}.dc div{font-size:12.5px;line-height:1.5}
+.dc.k{border-color:#6fd16f}.dc.n{border-color:#c9a34a}.dc.z{border-color:#ff9a4a}.dc.e{border-color:#e04545}
 #modal{position:absolute;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;padding:16px}
 #modal .box{background:#1d2616;border:2px solid #7a9a5a;border-radius:12px;padding:14px;max-width:420px;width:100%}
 #modal h3{margin:0 0 8px}
@@ -91,6 +104,8 @@ button.tb span{font-size:19px;line-height:1.1}button.tb.on{background:linear-gra
 <div id="panel"></div>
 <div id="bar"></div>
 <div id="setup"><div class="box"><h3>👑 Hükümdarını Oluştur</h3><label>Adın</label><input id="sName" maxlength="14" autocomplete="off"><label>Hane (soyadı)</label><input id="sHouse" maxlength="16" autocomplete="off"><label>Cinsiyet</label><div class="gl tg"></div><label>Özelliğin</label><div class="tl tg"></div><button data-a="setupgo" style="width:100%;margin-top:10px;font-size:16px">⚔ Yolculuğa Başla</button></div></div>
+<div id="menu"><div class="mbox"><h1>🏰 Krallık Yolu</h1><p class="sub">Aldora'nın Son Varisi</p><div id="menuBtns"></div><small id="menuFoot"></small></div></div>
+<div id="diffscr"><div class="box"><h3>⚔ Zorluk Seç</h3><p class="sub">Oynayacağın deneyimi seç. Bilgiler oyunun gerçek ayarlarıdır.</p><div id="diffList"></div><button class="mb2" data-a="diffback">← Geri</button></div></div>
 <div id="modal"><div class="box"><h3 id="mt"></h3><p id="mb"></p><div id="mbtn"></div></div></div>
 <script src="js/data.js"></script>
 <script src="js/core.js"></script>
@@ -108,6 +123,7 @@ button.tb span{font-size:19px;line-height:1.1}button.tb.on{background:linear-gra
 <script src="js/tutorial.js"></script>
 <script src="js/story.js"></script>
 <script src="js/setup.js"></script>
+<script src="js/menu.js"></script>
 <script src="js/input.js"></script>
 </body>
 </html>

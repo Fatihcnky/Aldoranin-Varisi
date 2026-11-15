@@ -15,7 +15,7 @@ function launchRaid(only){
  if(!camps.length||!tc)return;
  camps.sort((a,b)=>Math.hypot(a.x-tc.x,a.y-tc.y)-Math.hypot(b.x-tc.x,b.y-tc.y));
  const c=camps[Math.floor(Math.random()*Math.min(3,camps.length))];
- const size=clamp(Math.floor((2+Math.floor(S.day/10)+Math.floor(popNow()/14)+S.rank)*(only?0.8:1)),3,30);
+ const size=clamp(Math.floor((2+Math.floor(S.day/10)+Math.floor(popNow()/14)+S.rank)*(only?0.8:1)*dif().raid),2,40);
  for(let i=0;i<size;i++){
   let t='haydut';
   const r=Math.random();
@@ -33,7 +33,7 @@ function launchRaid(only){
   }
  });
  const ev=S.day<60?20:S.day<120?16:12;
- if(!only)S.raidAt=S.day+ri(ev,ev+3);
+ if(!only)S.raidAt=S.day+Math.round(ri(ev,ev+3)*dif().rf);
 }
 // haydut kampına yaklaşınca haraç iste, ödenmezse saldır
 function campWatch(){
@@ -130,7 +130,7 @@ function kingsDay(){
   }
   // savaş
   if(!k.war&&k.pact!=='ittifak'&&S.day>14&&S.day-k.lastWar>10&&dist<70){
-   const hot=k.rel<-55?0.3:(k.rel<-15&&(kg.pers==='savasci'||kg.pers==='acgozlu'))?0.07:(kg.pers==='savasci'&&k.str>S.day*1.2+40&&!k.pact)?0.025:0;
+   const hot=(k.rel<-55?0.3:(k.rel<-15&&(kg.pers==='savasci'||kg.pers==='acgozlu'))?0.07:(kg.pers==='savasci'&&k.str>S.day*1.2+40&&!k.pact)?0.025:0)*dif().war;
    if(hot&&Math.random()<hot){declareWar(i);return;}
   }
   // hediye

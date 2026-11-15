@@ -164,7 +164,7 @@ function econ(dt){
   }
  }else S.starve=Math.max(0,S.starve-dt);
  if(seas()===3){
-  S.res.wood-=pop*0.016*fxm('heat')*(S.hardWinter?1.5:1)*dt;
+  S.res.wood-=pop*0.016*fxm('heat')*dif().cold*(S.hardWinter?1.5:1)*dt;
   if(S.res.wood<=0){
    S.res.wood=0;S.cold+=dt;
    if(S.cold>=20){
@@ -328,7 +328,7 @@ function loadGame(){
   const d=JSON.parse(raw);
   const S2=JSON.parse(d.s);
   if(d.T.length!==NN||!S2.dyn)return false;
-  S=S2;RES.forEach(k=>{if(S.res[k]==null)S.res[k]=0;});
+  S=S2;applyDiff();RES.forEach(k=>{if(S.res[k]==null)S.res[k]=0;});
   T=Uint8Array.from(d.T.split('').map(Number));
   RA=Float32Array.from(d.RA.split(',').map(Number));
   ROAD=Uint8Array.from(d.R.split('').map(Number));

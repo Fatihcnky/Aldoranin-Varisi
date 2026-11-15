@@ -1,6 +1,19 @@
 'use strict';
 // ===== SABİTLER VE VERİ TABLOLARI =====
-const TS=32,MW=224,MH=224,DAY=110,SL=[16,16,16,18],YEARD=66;
+const TS=32,MW=224,MH=224,DAY=110,SL=[16,16,16,18];let YEARD=66;
+// ===== ZORLUK =====
+const DIFFS={
+ kolay:{n:'Kolay',ic:'🌱',sub:'Huzurlu Krallık',sl:[18,16,16,12],res:1.6,prod:1.25,cold:0.6,raid:0.6,rf:1.4,war:0.4,k:0.8,
+  lines:['❄ Kışlar kısa (12 gün) ve hafif: yakacak ihtiyacı az','🌾 Kaynaklar bol: başlangıç stoğu ve üretim yüksek','⚔ Haydut baskınları seyrek ve küçük','🕊 Krallıklar nadiren savaş açar']},
+ normal:{n:'Normal',ic:'⚔',sub:'Dengeli Yol',sl:[16,16,16,18],res:1,prod:1,cold:1,raid:1,rf:1,war:1,k:1,
+  lines:['❄ Kışlar orta uzunlukta (18 gün)','🌾 Kaynaklar dengeli','⚔ Baskınlar düzenli ve orta güçte','🏰 Krallıklar ilişkilere göre savaş açar']},
+ zor:{n:'Zor',ic:'🔥',sub:'Sert Hayatta Kalma',sl:[14,14,16,22],res:0.7,prod:0.9,cold:1.4,raid:1.4,rf:0.8,war:1.7,k:1.25,
+  lines:['❄ Kışlar uzun (22 gün) ve sert: çok yakacak gerekir','🌾 Kaynaklar kıt: az stok, düşük üretim','⚔ Baskınlar sık ve büyük','🏰 Krallıklar daha sık savaş açar, orduları güçlü']},
+ efsane:{n:'Efsane',ic:'💀',sub:'Acımasız Çağ',sl:[12,14,14,26],res:0.5,prod:0.8,cold:1.8,raid:1.8,rf:0.65,war:2.4,k:1.5,
+  lines:['❄ Kışlar çok uzun (26 gün) ve ölümcül','🌾 Çok kıt kaynaklar, zor ekonomi','⚔ Sürekli ve ağır baskınlar','🏰 Krallıklar saldırgan, orduları çok güçlü']}
+};
+function dif(){return DIFFS[(typeof S!=='undefined'&&S&&S.diff)||'normal']||DIFFS.normal;}
+function applyDiff(){const d=dif();for(let i=0;i<4;i++)SL[i]=d.sl[i];YEARD=SL[0]+SL[1]+SL[2]+SL[3];}
 const SEASON_DAYS=12;
 const SEASONS=['İlkbahar','Yaz','Sonbahar','Kış'];
 const AGES=['Taş Çağı','Bronz Çağı','Demir Çağı','Orta Çağ','Barut Çağı'];

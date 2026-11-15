@@ -64,9 +64,9 @@ function seasonOf(d){let x=d%YEARD;for(let s=0;s<4;s++){if(x<SL[s])return s;x-=S
 function seasonDay(d){let x=d%YEARD;for(let s=0;s<4;s++){if(x<SL[s])return x;x-=SL[s];}return 0;}
 function seas(){return seasonOf(Math.floor(S.t/DAY));}
 // kış için gereken stok: (nüfus başına) odun ve yiyecek, kış süresine göre
-function winterNeed(){const pop=Math.max(1,popNow()),sec=SL[3]*DAY;return{wood:Math.ceil(pop*0.016*1.1*sec),food:Math.ceil(pop*0.022*sec*0.75)};}
+function winterNeed(){const pop=Math.max(1,popNow()),sec=SL[3]*DAY;return{wood:Math.ceil(pop*0.016*1.1*dif().cold*sec),food:Math.ceil(pop*0.022*sec*0.75)};}
 function curDay(){return Math.floor(S.t/DAY);}
-function fxm(k){let m=1;for(const id in S.techs){const f=TECH[id].fx;if(f&&f[k])m*=f[k];}if(typeof fxTrait==='function'&&S.dyn)m*=fxTrait(k);return m;}
+function fxm(k){let m=(k==='gather'||k==='farm'||k==='forage'||k==='trade')?dif().prod:1;for(const id in S.techs){const f=TECH[id].fx;if(f&&f[k])m*=f[k];}if(typeof fxTrait==='function'&&S.dyn)m*=fxTrait(k);return m;}
 function fxa(k){let m=0;for(const id in S.techs){const f=TECH[id].add;if(f&&f[k])m+=f[k];}return m;}
 function countB(t,done){let n=0;for(const b of S.blds)if(b.team==='p'&&b.t===t&&(!done||b.done))n++;return n;}
 function nearestB(u,fn){let best=null,bd=1e9;for(const b of S.blds){if(b.hp<=0||!fn(b))continue;const d=dEnt(u,b);if(d<bd){bd=d;best=b;}}return best;}
@@ -113,7 +113,7 @@ function nearestEnemy(u,r,unitsOnly){
 function mkUnit(t,team,x,y,extra){
  const d=UT[t];
  const u=Object.assign({id:S.nid++,t,team,x,y,hp:d.hp,mhp:d.hp,job:null,st:'idle',path:null,pi:0,tg:0,cd:0,carry:0,rp:0,scan:Math.random()*0.5,flee:0,wait:Math.random()*0.5,ti:-1,wb:0,sb:0,tm:0,fs:0},extra||{});
- if((team==='k'||team==='f')&&d.atk&&S.day){const m=1+Math.min(1.3,S.day/220)+0.12*(S.rank||0);u.hp=u.mhp=Math.round(d.hp*m);u.ds=m;}
+ if((team==='k'||team==='f')&&d.atk&&S.day){const m=(1+Math.min(1.3,S.day/220)+0.12*(S.rank||0))*dif().k;u.hp=u.mhp=Math.round(d.hp*m);u.ds=m;}
  S.units.push(u);UM.set(u.id,u);return u;
 }
 function fillOcc(b,v){const g=BT[b.t]&&BT[b.t].gate;for(let dy=0;dy<b.h;dy++)for(let dx=0;dx<b.w;dx++){const x=b.x+dx,y=b.y+dy;if(inMap(x,y))GATE[y*MW+x]=(v&&g)?1:0;}for(let dy=0;dy<b.h;dy++)for(let dx=0;dx<b.w;dx++){const x=b.x+dx,y=b.y+dy;if(inMap(x,y))OCC[y*MW+x]=v;}}

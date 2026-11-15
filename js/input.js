@@ -134,9 +134,7 @@ function boot(){
   requestAnimationFrame(frame);
   if(cont&&loadGame())go();else newGameSetup(go);
  };
- if(loaded){
-  S=null;showModal('💾 Kayıtlı oyun','Kayıtlı bir oyun bulundu.',[{t:'Devam et',fn:()=>start(true)},{t:'Yeni oyun',fn:()=>{try{localStorage.removeItem('ky_save');}catch(e){}start(false);}}]);
- }else start(false);
+ S=null;showMenu(loaded,start);
 }
 window.__T={AUD,get S(){return S;},sim,act,newGame,foundVillage,placeBuilding,canPlace,autoJobs,balanceJobs,enqueue,launchRaid,UI};
 boot();
