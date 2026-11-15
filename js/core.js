@@ -22,10 +22,11 @@ function noise2(seed){
 
 // --- yardımcılar ---
 function inMap(x,y){return x>=0&&y>=0&&x<MW&&y<MH;}
+let GATE=new Uint8Array(MW*MH),PTF=false;
 function walk(x,y){
  if(x<0||y<0||x>=MW||y>=MH)return false;
  const i=y*MW+x,t=T[i];
- return t!==1&&!(t>=3&&t<=5)&&OCC[i]===0;
+ return t!==1&&!(t>=3&&t<=5)&&(OCC[i]===0||(PTF&&GATE[i]===1));
 }
 // --- sıkışma kontrolü: küçük kapalı boşlukta mı? (dolgu ile en çok 90 kare) ---
 const tpS=new Int32Array(NN);let tpStamp=0;const tpQ=new Int32Array(120);
@@ -72,7 +73,12 @@ function nearestB(u,fn){let best=null,bd=1e9;for(const b of S.blds){if(b.hp<=0||
 function hostile(a,b){
  const x=a.team,y=b.team;
  if(x==='w'||y==='w'){const w=x==='w'?a:b,o=x==='w'?b:a;return !!(UT[w.t]&&UT[w.t].aggr)&&!o.w&&(o.team==='p'||o.team==='a');}
- if(x==='f'||y==='f'){return x!==y&&(x==='b'||y==='b');}
+ if(x==='f'||y==='f'){
+  const f=x==='f'?a:b,o=x==='f'?b:a;
+  if(o.team==='b')return true;
+  if((o.team==='p'||o.team==='a')&&f.kid!=null&&S.kings&&S.kings[f.kid]&&S.kings[f.kid].war&&!S.kings[f.kid].dead)return true;
+  return false;
+ }
  if(x===y||x==='n'||y==='n')return false;
  const f=t=>t==='p'||t==='a';
  if(f(x)&&f(y))return false;
@@ -109,7 +115,7 @@ function mkUnit(t,team,x,y,extra){
  const u=Object.assign({id:S.nid++,t,team,x,y,hp:d.hp,mhp:d.hp,job:null,st:'idle',path:null,pi:0,tg:0,cd:0,carry:0,rp:0,scan:Math.random()*0.5,flee:0,wait:Math.random()*0.5,ti:-1,wb:0,sb:0,tm:0,fs:0},extra||{});
  S.units.push(u);UM.set(u.id,u);return u;
 }
-function fillOcc(b,v){for(let dy=0;dy<b.h;dy++)for(let dx=0;dx<b.w;dx++){const x=b.x+dx,y=b.y+dy;if(inMap(x,y))OCC[y*MW+x]=v;}}
+function fillOcc(b,v){const g=BT[b.t]&&BT[b.t].gate;for(let dy=0;dy<b.h;dy++)for(let dx=0;dx<b.w;dx++){const x=b.x+dx,y=b.y+dy;if(inMap(x,y))GATE[y*MW+x]=(v&&g)?1:0;}for(let dy=0;dy<b.h;dy++)for(let dx=0;dx<b.w;dx++){const x=b.x+dx,y=b.y+dy;if(inMap(x,y))OCC[y*MW+x]=v;}}
 function mkB(t,team,x,y,done,extra){
  const d=BT[t];
  const b=Object.assign({id:S.nid++,t,team,x,y,w:d.w,h:d.h,hp:done?d.hp:Math.max(1,d.hp*0.1),mhp:d.hp,prog:done?1:0,done:!!done,q:[],wk:[],fire:0,cd:0,decor:d.decor?1:0},extra||{});
@@ -163,7 +169,9 @@ function findPath(sx,sy,gx,gy,gw,gh,ex,partial){
 // 1: ok, 0: yol yok, -1: bütçe bitti (yalnızca soft)
 function setPath(u,gx,gy,gw,gh,ex,partial,soft){
  if(soft){if(pathBudget<=0)return -1;pathBudget--;}
+ PTF=u.team==='p'||u.team==='a'||u.team==='f';
  const p=findPath(u.x,u.y,gx,gy,gw,gh,ex,partial);
+ PTF=false;
  if(!p){u.path=null;return 0;}
  u.path=p;u.pi=0;return 1;
 }
@@ -185,7 +193,7 @@ function walkTo(u,dt){ if(!u.path)return true; return !moveStep(u,dt); }
 
 // --- harita üretimi ---
 function genMap(){
- T=new Uint8Array(NN);RA=new Float32Array(NN);ROAD=new Uint8Array(NN);OCC=new Int32Array(NN);FOG=new Uint8Array(NN);
+ T=new Uint8Array(NN);RA=new Float32Array(NN);ROAD=new Uint8Array(NN);OCC=new Int32Array(NN);GATE=new Uint8Array(NN);FOG=new Uint8Array(NN);
  const rn=mulberry(S.seed),nw=noise2(S.seed),nf=noise2(S.seed+77);
  const st=S.start;
  for(let y=0;y<MH;y++)for(let x=0;x<MW;x++){

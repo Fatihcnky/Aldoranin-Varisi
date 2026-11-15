@@ -219,7 +219,7 @@ function canPlace(t,x,y){
   if(T[i]!==0||OCC[i]!==0||FOG[i]===0)return false;
  }
  // köylüleri/yolu kapalı bir boşluğa hapsetmesin
- if(S.founded&&!d.decor&&t!=='duvar'){
+ if(S.founded&&!d.decor&&t!=='duvar'&&t!=='kapi'){
   const inF=(px,py)=>px>=x&&px<x+d.w&&py>=y&&py<y+d.h;
   for(let yy=y-1;yy<=y+d.h;yy++)for(let xx=x-1;xx<=x+d.w;xx++){
    if(inF(xx,yy)||!inMap(xx,yy)||!walk(xx,yy))continue;
@@ -320,7 +320,7 @@ function loadGame(){
   T=Uint8Array.from(d.T.split('').map(Number));
   RA=Float32Array.from(d.RA.split(',').map(Number));
   ROAD=Uint8Array.from(d.R.split('').map(Number));
-  OCC=new Int32Array(NN);
+  OCC=new Int32Array(NN);GATE=new Uint8Array(NN);
   FOG=d.F?Uint8Array.from(d.F.split('').map(Number)):new Uint8Array(NN).fill(1);
   UM=new Map();BM=new Map();
   for(const b of S.blds){BM.set(b.id,b);fillOcc(b,b.id);}

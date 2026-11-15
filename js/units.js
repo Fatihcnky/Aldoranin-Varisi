@@ -137,12 +137,15 @@ function workTick(u,dt){
  else if(j==='herd'){addRes('food',0.065*dt*HERDS[s]*hm*(b.lvl?1.5:1));addRes('deri',0.012*dt*hm);}
  else if(j==='trade')addRes('gold',0.07*dt*fxm('trade')*(1+0.25*pactCount())*hm);
  else if(j==='smith'){u.tm+=dt;if(u.tm>=12){
-  const R=S.res;
-  const rec=[()=>R.alet<6&&R.iron>=1&&R.wood>=1&&(R.iron-=1,R.wood-=1,addRes('alet',2),1),
-   ()=>R.zirh<4&&R.iron>=2&&R.deri>=2&&(R.iron-=2,R.deri-=2,addRes('zirh',1),1),
+  const R=S.res,mk=b.mk||'auto';
+  if(mk==='off'){u.tm=0;return;}
+  const lim=mk==='auto';
+  const rec=[()=>(!lim||R.alet<6)&&R.iron>=1&&R.wood>=1&&(R.iron-=1,R.wood-=1,addRes('alet',2),1),
+   ()=>(!lim||R.zirh<4)&&R.iron>=2&&R.deri>=2&&(R.iron-=2,R.deri-=2,addRes('zirh',1),1),
    ()=>R.iron>=2&&R.wood>=2&&(R.iron-=2,R.wood-=2,addRes('silah',1),1)];
   let ok=false;
-  for(let k=0;k<3&&!ok;k++){const i=((u.rc||0)+k)%3;if(rec[i]()){ok=true;u.rc=i+1;}}
+  if(lim){for(let k=0;k<3&&!ok;k++){const i=((u.rc||0)+k)%3;if(rec[i]()){ok=true;u.rc=i+1;}}}
+  else{const i={alet:0,zirh:1,silah:2}[mk];ok=!!rec[i]();}
   u.tm=ok?0:11;}}
  else if(j==='hunt'){u.fs-=dt;if(u.fs<=0){u.fs=2;const pr=findPrey(b,u);if(pr){u.pr=pr.id;u.st='hunt';u.path=null;u.cd=0;u.rp=0;}}}
  else if(j==='fire'){
@@ -388,7 +391,9 @@ function updFighter(u,dt){
     if(!g){u.st='idle';return;}
     u.gt=g.id;
    }
+   if(u.partial){u.partial=0;const wl=nearestB(u,b=>b.team==='p'&&(b.t==='duvar'||b.t==='kapi')&&Math.hypot(b.x+0.5-u.x,b.y+0.5-u.y)<3.2);if(wl){u.tg=wl.id;u.forced=1;u.path=null;return;}}
    const r=setPath(u,g.x,g.y,g.w,g.h,1,true,true);
+   if(r===1&&u.path&&u.path.length>=2){const ex=u.path[u.path.length-2],ey=u.path[u.path.length-1];u.partial=Math.hypot(ex-(g.x+g.w/2),ey-(g.y+g.h/2))>g.w/2+2.5?1:0;}
    if(r===0){u.wait=1;return;}
    if(r===1&&u.path&&u.path.length===0){u.tg=g.id;u.forced=1;u.path=null;}
   }else if(u.st==='move'||u.st==='amove'||u.st==='return'){

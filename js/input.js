@@ -56,6 +56,11 @@ function setGhost(t){
 function paintRoad(px,py){
  const t=toTile(px,py),x=Math.floor(t.x),y=Math.floor(t.y);
  if(!inMap(x,y))return;
+ if(UI.wall){
+  const wt=UI.wall;if(!S.founded||OCC[y*MW+x]||!canPlace(wt,x,y))return;
+  if(!afford(BT[wt].cost)){log('⛔ Kaynak yetersiz.');painting=false;return;}
+  placeBuilding(wt,x,y);return;
+ }
  const i=y*MW+x;
  if(ROAD[i]||T[i]===1||OCC[i]||(T[i]>=3&&T[i]<=5))return;
  if(S.res.wood<1){log('⛔ Odun yok.');painting=false;return;}

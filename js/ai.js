@@ -75,21 +75,29 @@ function allyK(i){const k=S.kings[i];if(!elcilikOk()||k.pact!=='ticaret'||k.rel<
 function peaceK(i){
  const k=S.kings[i],c=100+Math.floor(k.str*2);
  if(!k.war||S.res.gold<c)return false;
- S.res.gold-=c;k.war=false;k.rel=-10;
+ S.res.gold-=c;k.war=false;k.pw=0;k.rel=-10;
  S.units.forEach(u=>{if(u.team==='k'&&u.kid===i)killU(u);});
  log('🕊 '+KINGS[i].n+' ile barış yapıldı.');return true;
 }
 function peaceCost(i){return 100+Math.floor(S.kings[i].str*2);}
-function declareWar(i){
- const k=S.kings[i],kg=KINGS[i],tc=mainTC();if(!tc)return;
- k.war=true;k.lastWar=S.day;
- const n=clamp(Math.floor(k.str/9),3,16);
+function launchWave(i){
+ const k=S.kings[i],kg=KINGS[i],tc=mainTC();if(!tc)return 0;
+ k.lastWave=S.day;
+ const n=clamp(Math.floor(k.str/9),3,18);
  for(let j=0;j<n;j++){
   const t=S.day>40&&Math.random()<0.3?'atli':Math.random()<0.35?'okcu':'mizrakli';
   mkUnit(t,'k',kg.x+(j%4)*0.8-1,kg.y+4+(j/4|0)*0.8,{st:'raid',gt:tc.id,kid:i});
  }
+ return n;
+}
+function declareWar(i,byPlayer){
+ const k=S.kings[i],kg=KINGS[i];if(!mainTC())return;
+ k.war=true;k.pw=1;k.lastWar=S.day;
+ if(byPlayer){k.pact=null;k.rel=Math.min(k.rel,-60);}
+ const n=launchWave(i);
+ if(byPlayer){log('⚔ '+kg.n+' krallığına savaş ilan ettin! Ordusu sana doğru yola çıktı.',kg.x,kg.y);return;}
  log('⚔ '+kg.n+' sana savaş ilan etti! '+n+' askerlik ordu yola çıktı.',kg.x,kg.y);
- showModal('⚔ Savaş!',kg.who+' sınır anlaşmazlığı yüzünden savaş ilan etti ve ordusunu gönderdi. Savun ya da Elçilik üzerinden barış satın al ('+peaceCost(i)+' altın).',[{t:'Anladım'}]);
+ showModal('⚔ Savaş!',kg.who+' sınır anlaşmazlığı yüzünden savaş ilan etti ve ordusunu gönderdi. Savaş sürdükçe yeni birlikler gelecek. Savun, onların köylerine saldır ya da Diplomasi\'den barış satın al ('+peaceCost(i)+' altın).',[{t:'Anladım'}]);
 }
 function kingsDay(){
  S.kings.forEach((k,i)=>{
@@ -97,7 +105,10 @@ function kingsDay(){
   const kg=KINGS[i];
   k.str=20+S.day*(kg.pers==='savasci'?2.2:1.3);
   if(k.pact)k.rel=Math.min(100,k.rel+0.3);else k.rel+=(0-k.rel)*0.01;
-  if(k.war&&!S.units.some(u=>u.team==='k'&&u.kid===i)){k.war=false;k.rel=-30;log('🏳 '+kg.n+' ordusu bozguna uğradı, savaş sona erdi.');}
+  if(k.war&&!S.units.some(u=>u.team==='k'&&u.kid===i)){
+   if(k.pw&&S.day-(k.lastWave||0)>=4){const n=launchWave(i);if(n)log('⚔ '+kg.n+' yeni bir ordu gönderdi ('+n+' asker)!',kg.x,kg.y);}
+   else if(!k.pw){k.war=false;k.rel=-30;log('🏳 '+kg.n+' ordusu bozguna uğradı, savaş sona erdi.');}
+  }
   const dist=nearestPlayerDist(i);
   // sınır şikâyeti
   if(dist<24&&k.pact!=='ittifak'&&S.day-k.lastComplaint>=5&&Math.random()<0.4){
@@ -118,7 +129,10 @@ function kingsDay(){
    return;
   }
   // savaş
-  if(k.rel<-55&&k.pact!=='ittifak'&&!k.war&&S.day>14&&S.day-k.lastWar>10&&Math.random()<0.3&&dist<60){declareWar(i);return;}
+  if(!k.war&&k.pact!=='ittifak'&&S.day>14&&S.day-k.lastWar>10&&dist<70){
+   const hot=k.rel<-55?0.3:(k.rel<-15&&(kg.pers==='savasci'||kg.pers==='acgozlu'))?0.07:(kg.pers==='savasci'&&k.str>S.day*1.2+40&&!k.pact)?0.025:0;
+   if(hot&&Math.random()<hot){declareWar(i);return;}
+  }
   // hediye
   if(k.rel>35&&Math.random()<0.04){
    const g=ri(40,100);addRes('gold',g);log('🎁 '+kg.n+' '+g+' altın hediye gönderdi.');
@@ -216,9 +230,31 @@ function rollEvent(){
 }
 
 // ---------- günlük işlemler ----------
+// Her kıştan sonra haritada rastgele yeni kaynaklar belirir
+function spawnRes(){
+ const tc=mainTC(),cx=tc?tc.x:MW/2,cy=tc?tc.y:MH/2,rn=Math.random;
+ const AM={3:250,4:190,5:150,6:120};
+ const spots=[[2,14,3],[3,5,2],[4,5,2],[5,4,1],[6,5,2]];
+ let made={2:0,3:0,4:0,5:0,6:0};
+ for(const [t,n,times] of spots){
+  for(let k=0;k<times;k++){
+   for(let tr=0;tr<40;tr++){
+    const near=tr<25,r=near?18+rn()*38:rn()*MW;
+    const a=rn()*6.283,x=Math.floor(near?cx+Math.cos(a)*r:rn()*MW),y=Math.floor(near?cy+Math.sin(a)*r:rn()*MH);
+    if(!inMap(x,y)||T[y*MW+x]!==0||OCC[y*MW+x]||ROAD[y*MW+x])continue;
+    if(S.blds.some(b=>b.team!=='n'&&Math.abs(b.x-x)<6&&Math.abs(b.y-y)<6))continue;
+    let c=0;
+    for(let j=0;j<n;j++){const xx=x+Math.floor(rn()*5)-2,yy=y+Math.floor(rn()*5)-2;if(inMap(xx,yy)&&T[yy*MW+xx]===0&&!OCC[yy*MW+xx]&&!ROAD[yy*MW+xx]){T[yy*MW+xx]=t;RA[yy*MW+xx]=t===2?60:AM[t];c++;}}
+    if(c){made[t]+=c;break;}
+   }
+  }
+ }
+ log('🌱 Kış bitti: haritada yeni ormanlar, taş, maden ve meyve alanları belirdi.');
+}
 function onDay(){
  const d=S.day,s=seas(),sd=seasonDay(d),last=sd===SL[s]-1;
  if(sd===0)log('🌤 Mevsim: '+SEASONS[s]+'.');
+ if(s===3&&last)spawnRes();
  if(s===2&&sd===SL[2]-4){const w=winterNeed();log('❄ Kışa 4 gün kaldı! '+SL[3]+' günlük kış için yaklaşık '+w.wood+' odun ve '+w.food+' yiyecek gerek.');}
  // mutluluk, hanedan, kış
  happyDay();

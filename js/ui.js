@@ -20,7 +20,7 @@ function nextModal(){
  $('mbtn').innerHTML=m.btns.map((b,i)=>'<button data-a="modal" data-v="'+i+'">'+b.t+'</button>').join('');
  $('modal').style.display='flex';
 }
-function uiReset(){UI.tab=null;UI.sel=null;UI.place=null;UI.road=false;UI.modalQ=[];UI.modalOpen=false;$('modal').style.display='none';$('log').innerHTML='';buildBar();updPanel(true);updHint();}
+function uiReset(){UI.tab=null;UI.sel=null;UI.place=null;UI.road=false;UI.wall=null;UI.modalQ=[];UI.modalOpen=false;$('modal').style.display='none';$('log').innerHTML='';buildBar();updPanel(true);updHint();}
 
 // ---------- yardımcılar ----------
 function cstr(c){return Object.keys(c).map(k=>'<span style="color:'+((S.res[k]||0)>=c[k]?'#fff':'#ff8a80')+'">'+RI[k]+c[k]+'</span>').join(' ');}
@@ -46,7 +46,7 @@ function updHint(){
   $('hinttxt').textContent=(UI.place.mv?d.n+' taşı: yeni yeri seç':UI.place.t==='tc'&&!S.founded?'Köyün kurulacağı yeri seç':d.n+': yeri seç')+(UI.place.x==null?' (haritaya dokun)':'');
   $('hintbtn').innerHTML=btn('✔ Onayla','confirm')+btn('✖ İptal','cancel');
  }else if(UI.road){
-  hn.style.display='block';$('hinttxt').textContent='Yol: haritada parmağını sürükle (kare başı 1 odun)';$('hintbtn').innerHTML=btn('✖ Bitti','cancel');
+  hn.style.display='block';$('hinttxt').textContent=UI.wall?BT[UI.wall].n+': parmağını sürükleyerek hat çiz, kapı için tek tek dokun (kare başı '+Object.keys(BT[UI.wall].cost).map(k=>RI[k]+BT[UI.wall].cost[k]).join(' ')+')':'Yol: haritada parmağını sürükle (kare başı 1 odun)';$('hintbtn').innerHTML=btn('✖ Bitti','cancel');
  }else hn.style.display='none';
 }
 function selInfo(){
@@ -130,6 +130,7 @@ function pDip(){
   h+='<div style="margin:6px 0;padding:6px;border:1px solid '+k.col+';border-radius:8px"><b>'+k.n+'</b> — '+k.who+'<br><small>'+k.d+'</small><br>İlişki: '+Math.round(s.rel)+' '+bar((s.rel+100)/200)+' · Durum: '+(s.war?'⚔ SAVAŞ':s.pact==='ittifak'?'🤝 İttifak':s.pact?'📜 Ticaret':'—')+'<div class="row">';
   h+=btn('🎁 Hediye (50💰)','gift',i,S.res.gold<50);
   if(!S.dyn.spouse&&!s.war)h+=btn('💍 Evlilik (150💰)','marry',i,s.rel<30||S.res.gold<150);
+  if(!s.war)h+=btn('⚔ Savaş ilan et','dwar',i);
   if(s.war)h+=btn('🕊 Barış ('+peaceCost(i)+'💰)','peace',i,S.res.gold<peaceCost(i));
   else if(!s.pact)h+=btn('📜 Ticaret (100💰)','treaty',i,s.rel<15||S.res.gold<100);
   else if(s.pact==='ticaret')h+=btn('🤝 İttifak (200💰 150🍖)','ally',i,s.rel<45||S.res.gold<200||S.res.food<150);
@@ -187,6 +188,10 @@ function pSel(){
   if(b.t==='maden'){h+='<div class="row"><b>Çıkarılacak maden:</b>'+['stone','iron','gold'].map(o=>'<button data-a="ore" data-v="'+b.id+'" data-w="'+o+'"'+((b.ore||'stone')===o?' style="background:#6a4e22;border-color:#ffd070"':'')+'>'+RI[o]+' '+RN[o]+'</button>').join('')+'</div><small>Bu kulübedeki işçiler yalnızca seçtiğin madeni çıkarır.</small>';}
   h+='<div class="row">'+btn('➕ İşçi ekle','jp',jid)+btn('➖ İşçi çıkar','jm',jid)+'<small>Toplam '+jid+' işçi: '+have+'/'+(S.jobs[jid]||0)+' (Halk menüsünden de ayarlanır)</small></div>';
  }
+ if(b.team==='p'&&b.done&&b.t==='demirci'){
+  const mk=b.mk||'auto',opts=[['auto','⚙ Otomatik'],['alet','🔨 Alet'],['silah','🗡 Silah'],['zirh','🛡 Zırh'],['off','⏸ Durdur']];
+  h+='<div class="row"><b>Üretim:</b>'+opts.map(o=>'<button data-a="mk" data-v="'+b.id+'" data-w="'+o[0]+'"'+(mk===o[0]?' style="background:#6a4e22;border-color:#ffd070"':'')+'>'+o[1]+'</button>').join('')+'</div><small>Alet: 1 demir+1 odun → 2 alet · Silah: 2 demir+2 odun · Zırh: 2 demir+2 deri. Otomatik, dengeli üretir ve stok sınırı koyar; seçili modda sınırsız üretir.</small>';
+ }
  if(b.team==='p'&&b.done&&b.t==='ev'){const n=households().get(b.id)||0,kids=Math.round(n*0.35);h+='<div>👪 <b>'+famName(b)+' Hanesi</b>: '+n+' kişi ('+(n-kids)+' yetişkin, '+kids+' çocuk)'+(b.lvl?' · ⭐ Taş ev':'')+'</div>';}
  if(b.team==='p'&&b.done&&UPG[b.t]){const u=UPG[b.t];if(b.lvl)h+='<div>⭐ '+u.n+' (yükseltildi)</div>';else{const why=u.age>S.age?'Çağ: '+AGES[u.age]:'';h+='<div class="row">'+btn('⬆ '+u.n,'upg',b.id,!!why||!afford(u.cost))+'<small>'+(why?'🔒 '+why:u.d+' '+cstr(u.cost))+'</small></div>';}}
  if(b.team==='p'&&b.done){
@@ -238,11 +243,11 @@ function act(a,v,w,el){
   case 'save':log(saveGame()?'💾 Oyun kaydedildi.':'⛔ Kaydedilemedi.');break;
   case 'found':UI.place={t:'tc',x:null,y:null};{const u=S.units.find(u=>u.team==='p');if(u){UI.place.x=Math.floor(u.x)-1;UI.place.y=Math.floor(u.y)+2;}}UI.tab=null;updPanel(true);updHint();break;
   case 'selall':UI.sel={kind:'u',ids:S.units.filter(u=>u.team==='p').map(u=>u.id)};break;
-  case 'place':UI.place={t:v,x:null,y:null};UI.road=false;UI.tab=null;updPanel(true);updHint();break;
+  case 'place':if(v==='duvar'||v==='kapi'){UI.wall=v;UI.road=true;UI.place=null;UI.tab=null;updPanel(true);updHint();break;}UI.wall=null;UI.place={t:v,x:null,y:null};UI.road=false;UI.tab=null;updPanel(true);updHint();break;
   case 'confirm':doConfirm();break;
   case 'move':{const b=BM.get(+v);if(b&&b.done&&b.team==='p'&&b.t!=='tc'){UI.place={t:b.t,mv:b.id,x:b.x,y:b.y};UI.sel=null;UI.tab=null;updPanel(true);updHint();}break;}
-  case 'cancel':UI.place=null;UI.road=false;updHint();break;
-  case 'road':UI.road=true;UI.place=null;UI.tab=null;updPanel(true);updHint();break;
+  case 'cancel':UI.place=null;UI.road=false;UI.wall=null;updHint();break;
+  case 'road':UI.wall=null;UI.road=true;UI.place=null;UI.tab=null;updPanel(true);updHint();break;
   case 'train':{const b=BM.get(+w)||bestTrainer(v);if(b)enqueue(b,v,1);break;}
   case 'train5':{const b=BM.get(+w)||bestTrainer(v);if(b)enqueue(b,v,5);break;}
   case 'autojobs':autoJobs();balanceJobs();break;
@@ -251,6 +256,7 @@ function act(a,v,w,el){
   case 'tech':startResearch(v);break;
   case 'ageup':startAgeUp();break;
   case 'rankup':doRankUp();break;
+  case 'dwar':{const i=+v;showModal('⚔ Savaş ilanı',KINGS[i].n+' krallığına savaş ilan etmek istediğine emin misin? Ordusu sana saldıracak, ittifak/anlaşma bozulur. Barışı altınla satın alabilirsin. Savaştayken onların köylerine de saldırabilirsin.',[{t:'Savaş ilan et',fn:()=>{declareWar(i,true);updPanel(true);}},{t:'Vazgeç'}]);break;}
   case 'gift':giftK(+v);break;
   case 'treaty':treatyK(+v);break;
   case 'ally':allyK(+v);break;
@@ -264,6 +270,7 @@ function act(a,v,w,el){
   case 'marry':proposeMarriage(+v);break;
   case 'selarmy':UI.sel={kind:'u',ids:soldiers().map(u=>u.id)};UI.tab=null;updPanel(true);break;
   case 'retreat':{const tc=mainTC();if(tc)cmdMove(soldiers(),tc.x+tc.w/2,tc.y+tc.h+1,false);break;}
+  case 'mk':{const b=BM.get(+v);if(b&&b.t==='demirci'){b.mk=w;log('⚒ Demirhane üretimi: '+({auto:'otomatik',alet:'alet',silah:'silah',zirh:'zırh',off:'durduruldu'})[w]+'.');}updPanel(true);break;}
   case 'ore':{const b=BM.get(+v);if(b&&b.t==='maden'){b.ore=w;for(const u of S.units)if(u.wb===b.id&&u.job==='mine'){u.ti=-1;u.carry=0;u.st='idle';u.path=null;}log('⛏ Madenci kulübesi artık '+RN[w]+' çıkaracak.');}updPanel(true);break;}
   case 'upg':{const b=BM.get(+v);if(b&&UPG[b.t]&&!b.lvl&&UPG[b.t].age<=S.age&&afford(UPG[b.t].cost)){pay(UPG[b.t].cost);b.lvl=1;b.hp=Math.max(b.hp,b.mhp);log('⬆ '+UPG[b.t].n+' tamamlandı.',b.x,b.y);}updPanel(true);break;}
   case 'demolish':{const b=BM.get(+v);if(b){demolish(b);UI.sel=null;}updPanel(true);break;}

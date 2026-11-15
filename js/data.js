@@ -1,6 +1,6 @@
 'use strict';
 // ===== SABİTLER VE VERİ TABLOLARI =====
-const TS=32,MW=224,MH=224,DAY=70,SL=[12,12,12,14],YEARD=50;
+const TS=32,MW=224,MH=224,DAY=110,SL=[16,16,16,18],YEARD=66;
 const SEASON_DAYS=12;
 const SEASONS=['İlkbahar','Yaz','Sonbahar','Kış'];
 const AGES=['Taş Çağı','Bronz Çağı','Demir Çağı','Orta Çağ','Barut Çağı'];
@@ -36,14 +36,15 @@ const BT={
  depo:{n:'Depo',ic:'📦',w:2,h:2,hp:180,age:0,cost:{wood:60},time:12,store:400,drop:1,col:'#7a5c3a',d:'Kaynak bırakma noktası, stok +400.'},
  ciftlik:{n:'Çiftlik',ic:'🌾',w:3,h:3,hp:120,age:0,cost:{wood:70},time:14,col:'#b9a53f',d:'3 çiftçi. Mevsime göre yiyecek üretir; kışın neredeyse durur.'},
  agil:{n:'Ağıl',ic:'🐑',w:3,h:3,hp:140,age:0,cost:{wood:90,food:30},time:16,col:'#9a8a5a',d:'3 çoban. Kışın bile az da olsa yiyecek verir.'},
- demirci:{n:'Silah Atölyesi',ic:'⚒',w:3,h:3,hp:260,age:1,cost:{wood:100,stone:80,iron:30},time:22,col:'#555',d:'Silahçılar demir+odundan silah üretir.'},
+ demirci:{n:'Demirhane',ic:'⚒',w:3,h:3,hp:260,age:1,cost:{wood:100,stone:80,iron:30},time:22,col:'#555',d:'Demir ocağı: alet, silah ve zırh üretir. Ne üretileceğini binaya dokunarak seç.'},
  kisla:{n:'Kışla',ic:'⚔',w:3,h:3,hp:320,age:0,cost:{wood:120,stone:40},time:20,col:'#6b6b6b',train:['mizrakli','kilic'],d:'Mızraklı ve kılıçlı asker eğitir.'},
  okcu:{n:'Okçu Menzili',ic:'🏹',w:3,h:3,hp:280,age:0,cost:{wood:110,stone:20},time:20,col:'#6b7b4b',train:['okcu'],d:'Okçu eğitir.'},
  ahir:{n:'Ahır',ic:'🐎',w:3,h:3,hp:300,age:2,cost:{wood:150,stone:80,gold:40},time:22,col:'#7b5b3b',train:['atli','atliokcu'],d:'Atlı şövalye ve atlı okçu eğitir.'},
  topcu:{n:'Top Dökümhanesi',ic:'💣',w:3,h:3,hp:360,age:4,cost:{wood:200,stone:150,iron:150,gold:100},time:30,col:'#4b4b55',train:['top'],d:'Top üretir (Barut teknolojisi gerekir).'},
- kule:{n:'Ahşap Gözcü Kulesi',ic:'🗼',w:2,h:2,hp:260,age:0,cost:{wood:90,stone:20},time:14,atk:7,rng:7.5,col:'#8a6a4a',d:'Ucuz savunma: yakındaki düşmanlara ok atar. Kale ünvanı için gerekli.'},
+ kule:{n:'Gözcü Kulesi',ic:'🗼',w:2,h:2,hp:260,age:0,cost:{wood:90,stone:20},time:14,atk:7,rng:7.5,col:'#8a6a4a',d:'Ucuz savunma: yakındaki düşmanlara ok atar. Kale ünvanı için gerekli.'},
  tkule:{n:'Taş Kule',ic:'🏯',w:2,h:2,hp:520,age:1,cost:{wood:50,stone:160},time:22,atk:13,rng:9,col:'#8a8a8a',d:'Sağlam taş kule: güçlü ok atışı, uzun menzil.'},
- duvar:{n:'Çit / Duvar',ic:'🧱',w:1,h:1,hp:160,age:0,cost:{wood:4,stone:1},time:3,arm:2,col:'#7a6a55',d:'Düşmanları yönlendirir ve yavaşlatır. Kareye tek tek dokun.'},
+ kapi:{n:'Kapı',ic:'🚪',w:1,h:1,hp:220,age:0,cost:{wood:10,stone:2},time:4,arm:2,gate:1,col:'#8a5a2a',d:'Çite/duvara kapı: halk ve askerlerimiz geçer, haydutlar ve düşmanlar geçemez, yıkmak zorunda kalır.'},
+ duvar:{n:'Çit / Duvar',ic:'🧱',w:1,h:1,hp:160,age:0,cost:{wood:4,stone:1},time:3,arm:2,col:'#7a6a55',d:'Düşmanları yönlendirir ve yavaşlatır. Seçip parmağını sürükleyerek hat çiz.'},
  oduncu:{n:'Oduncu Kulübesi',ic:'🪓',w:2,h:2,hp:160,age:0,cost:{wood:50},time:10,col:'#6a4a2a',drop:['wood'],d:'Ormanın yanına kur: oduncular odunu buraya bırakır, yürüyüş kısalır.'},
  maden:{n:'Madenci Kulübesi',ic:'⛏',w:2,h:2,hp:180,age:0,cost:{wood:70,stone:30},time:14,col:'#666',drop:['stone','iron','gold'],d:'Taş ocağı veya maden yanına kur: taş, demir ve altın buraya bırakılır.'},
  avci:{n:'Avcı Kulübesi',ic:'🦌',w:2,h:2,hp:160,age:0,cost:{wood:60},time:12,col:'#7a5a3a',drop:1,d:'2 avcı: geyik ve yaban domuzu avlar (ava dikkat: kurtlar).'},
@@ -72,7 +73,7 @@ const UPG={
 };
 const BCAT=[
  ['Temel',['ev','depo','ciftlik','agil','avci','oduncu','maden']],
- ['Askerî',['kisla','okcu','ahir','topcu','kule','tkule','duvar','kale']],
+ ['Askerî',['kisla','okcu','ahir','topcu','kule','tkule','duvar','kapi','kale']],
  ['Üretim & Şehir',['demirci','pazar','itfaiye','hastane','sapel','han','elcilik','saray']]
 ];
 
