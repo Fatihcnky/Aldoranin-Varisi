@@ -19,3 +19,6 @@ Repoya her push'ta GitHub Actions oyunu otomatik APK'ya çevirir:
 
 ## Görseller
 Bina, birim, ağaç ve zemin görselleri Kenney'nin "RTS Pack: Medieval" paketindendir (CC0, kenney.nl). Lisans: `img/LICENSE-Kenney.txt`.
+
+## Karakter sprite'ları
+Köylüler ve askerler "Minifolks" (Villagers + Humans) sprite paketiyle çizilir (`img/mf/`). Paketin lisans koşullarını yayınlamadan önce kontrol edin.
