@@ -4,7 +4,7 @@ const SEAS_IC=['🌱','☀️','🍂','❄️'],AGE_IC=['🪨','🥉','⚔️','
 
 function chip(k){
  const v=Math.floor(S.res[k]||0),cap=storeCap(),pct=NOCAP[k]?0:v/cap;
- return '<span class="chip'+(pct>0.95?' full':'')+'">'+RI[k]+'<b>'+v+'</b>'+(NOCAP[k]?'':'<i style="width:'+Math.min(100,Math.round(pct*100))+'%"></i>')+'</span>';
+ return '<span class="chip'+(pct>0.95?' full':'')+'" data-a="tab" data-v="res">'+RI[k]+'<b>'+v+'</b>'+(NOCAP[k]?'':'<i style="width:'+Math.min(100,Math.round(pct*100))+'%"></i>')+'</span>';
 }
 function daysToWinter(){
  const d=curDay(),s=seas();if(s===3)return 0;
@@ -131,10 +131,11 @@ function pPeople(){
 // ---------- ordu ----------
 function armyBar(){
  const el=$('selbar');if(!el)return;
- const sd=S.founded&&!UI.tab?soldiers():[];
+ const panelOpen=UI.tab||(UI.sel&&UI.sel.kind==='b')||UI.place||UI.road;
+ const sd=S.founded&&!panelOpen?soldiers():[];
  let h='';
  const us=UI.sel&&UI.sel.kind==='u'?UI.sel.ids.map(id=>UM.get(id)).filter(Boolean):[];
- if(us.length&&!UI.tab){
+ if(us.length&&!panelOpen){
   const mil=us.filter(u=>UT[u.t].mil);
   h+='<span class="sbn">'+(us.length===1?UT[us[0].t].g+' '+UT[us[0].t].n+' ❤'+Math.ceil(us[0].hp):'✅ '+us.length+' birim seçili')+'</span>';
   if(mil.length){h+=btn('🛑 Dur','hold')+btn('🏠 Geri çek','retreat')+btn('≡ Aynı tip','seltype',us[0].t);}
@@ -172,6 +173,12 @@ function selectSameType(u){
 }
 
 // ---------- ek eylemler ----------
+function focusTile(x,y){
+ const pn=$('panel'),open=pn.style.display!=='none'&&pn.offsetHeight>0;
+ const top=$('top').offsetHeight,bot=open?innerHeight-pn.getBoundingClientRect().top:60;
+ const yv=(top+(innerHeight-bot))/2,s=sc();
+ S.cam.x=x;S.cam.y=y-(yv*DPR-CH/2)/s;clampCam();
+}
 const _act=act;
 act=function(a,v,w,el){
  switch(a){
@@ -180,6 +187,7 @@ act=function(a,v,w,el){
   case 'seltype':{const sd=soldiers().filter(u=>u.t===v);UI.sel={kind:'u',ids:sd.map(u=>u.id)};UI.tab=null;updPanel(true);return;}
   case 'desel':UI.sel=null;updPanel(true);return;
   case 'mute':if(typeof audToggle==='function')audToggle();buildBar();return;
+  case 'jump':focusTile(+el.dataset.x+0.5,+el.dataset.y+0.5);return;
   case 'tutskip':tutSkip();return;
   case 'tutok':tutNext(true);return;
  }

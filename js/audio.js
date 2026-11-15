@@ -9,9 +9,9 @@ function audInit(){
   AUD.ctx=new C();
   AUD.master=AUD.ctx.createGain();AUD.master.gain.value=AUD.muted?0:0.9;AUD.master.connect(AUD.ctx.destination);
   AUD.sfxG=AUD.ctx.createGain();AUD.sfxG.gain.value=0.5;AUD.sfxG.connect(AUD.master);
-  AUD.mus=AUD.ctx.createGain();AUD.mus.gain.value=0.16;AUD.mus.connect(AUD.master);
+  AUD.mus=AUD.ctx.createGain();AUD.mus.gain.value=0.16;const lp=AUD.ctx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=1800;AUD.mus.connect(lp);lp.connect(AUD.master);
   // basit yankı
-  const d=AUD.ctx.createDelay(1);d.delayTime.value=0.33;const fb=AUD.ctx.createGain();fb.gain.value=0.35;d.connect(fb);fb.connect(d);AUD.mus.connect(d);d.connect(AUD.master);
+  const d=AUD.ctx.createDelay(1);d.delayTime.value=0.33;const fb=AUD.ctx.createGain();fb.gain.value=0.22;d.connect(fb);fb.connect(d);lp.connect(d);d.connect(AUD.master);
  }catch(e){AUD.ctx=null;}
 }
 function audToggle(){
@@ -22,7 +22,7 @@ function tone(f,t0,dur,type,vol,dest,slide){
  const c=AUD.ctx;if(!c)return;
  const o=c.createOscillator(),g=c.createGain();o.type=type||'sine';o.frequency.setValueAtTime(f,t0);
  if(slide)o.frequency.exponentialRampToValueAtTime(Math.max(20,slide),t0+dur);
- g.gain.setValueAtTime(0.0001,t0);g.gain.exponentialRampToValueAtTime(vol,t0+Math.min(0.03,dur/3));g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
+ g.gain.setValueAtTime(0.0001,t0);g.gain.exponentialRampToValueAtTime(vol,t0+(dest===AUD.mus?Math.min(0.6,dur/3):Math.min(0.03,dur/3)));g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
  o.connect(g);g.connect(dest||AUD.sfxG);o.start(t0);o.stop(t0+dur+0.05);
 }
 function noise(t0,dur,vol,freq){
@@ -68,7 +68,6 @@ function audMusic(){
  const len=m==='tense'?0.9:2.2;
  tone(f,t+0.02,len,m==='tense'?'sawtooth':'triangle',m==='tense'?0.25:0.4,AUD.mus);
  if(Math.random()<0.35)tone(f*1.5,t+0.25,len,'sine',0.25,AUD.mus);
- if(Math.random()<0.2)tone(r/2,t,3.5,'sine',0.5,AUD.mus);
  AUD.nextNote=t+(m==='tense'?0.55+Math.random()*0.5:1.2+Math.random()*1.8);
 }
 setInterval(()=>{try{audMusic();}catch(e){}},250);
@@ -88,6 +87,6 @@ setInterval(()=>{try{audMusic();}catch(e){}},250);
   else sfx('bell');
  };
  const _sm=showModal;showModal=function(a,b,c){sfx('bell');return _sm(a,b,c);};
- const _h=hit;hit=function(a,e){_h(a,e);sfx(UT[a.t]&&UT[a.t].ranged?'arrow':'hit');};
+ const _h=hit;hit=function(a,e){_h(a,e);const dx=Math.abs(a.x-S.cam.x),dy=Math.abs(a.y-S.cam.y);if(dx<12&&dy<9&&(a.team==='p'||a.team==='a'||e.team==='p'))sfx(UT[a.t]&&UT[a.t].ranged?'arrow':'hit');};
 })();
 document.addEventListener('pointerup',e=>{if(e.target.closest&&e.target.closest('[data-a]'))sfx('click');},true);

@@ -126,16 +126,16 @@ function draw(){
  ctx.setTransform(s,0,0,s,-x0*s,-y0*s);
  const sn=seas();
  const xa=Math.max(0,Math.floor(x0)),xb=Math.min(MW-1,Math.ceil(x0+vw)),ya=Math.max(0,Math.floor(y0)),yb=Math.min(MH-1,Math.ceil(y0+vh));
- for(let y=ya;y<=yb;y++)for(let x=xa;x<=xb;x++){const f=FOG[y*MW+x];if(f===0){ctx.fillStyle='#05080b';ctx.fillRect(x,y,1.03,1.03);continue;}drawTile(x,y,sn);if(f===1){ctx.fillStyle='rgba(0,0,0,0.42)';ctx.fillRect(x,y,1.03,1.03);}}
+ for(let y=ya;y<=yb;y++)for(let x=xa;x<=xb;x++){const f=FOG[y*MW+x];if(f===0){ctx.fillStyle='#05080b';ctx.fillRect(x,y,1.03,1.03);continue;}drawTile(x,y,sn);}
  // krallık sınırları
  ctx.lineWidth=0.1;
  KINGS.forEach((k,i)=>{if(S.kings[i].dead||fogAt(k.x,k.y)===0)return;ctx.strokeStyle=k.col+'88';ctx.beginPath();ctx.arc(k.x,k.y,22,0,6.3);ctx.stroke();});
  const vis=o=>o.x+(o.w||0)>=xa-1&&o.x<=xb+2&&o.y+(o.h||0)>=ya-1&&o.y<=yb+2;
- for(const b of S.blds){if(!vis(b))continue;if(b.team!=='p'){const f=fogAt(b.x+b.w/2,b.y+b.h/2);if(f===0)continue;drawBuilding(b);if(f===1){ctx.fillStyle='rgba(0,0,0,0.42)';ctx.fillRect(b.x,b.y,b.w,b.h);}}else drawBuilding(b);}
+ for(const b of S.blds){if(!vis(b))continue;if(b.team!=='p'){const f=fogAt(b.x+b.w/2,b.y+b.h/2);if(f===0)continue;drawBuilding(b);}else drawBuilding(b);}
  // seçili bina halkası
  if(UI.sel&&UI.sel.kind==='b'){const b=BM.get(UI.sel.id);if(b){ctx.lineWidth=0.12;ctx.strokeStyle='#fff';ctx.strokeRect(b.x-0.05,b.y-0.05,b.w+0.1,b.h+0.1);if(BT[b.t].rng&&b.team==='p'){ctx.lineWidth=0.05;ctx.strokeStyle='#fff6';ctx.beginPath();ctx.arc(b.x+b.w/2,b.y+b.h/2,BT[b.t].rng,0,6.3);ctx.stroke();}}}
  const selU=new Set(UI.sel&&UI.sel.kind==='u'?UI.sel.ids:[]);
- for(const u of S.units){if(!vis(u))continue;if(u.team!=='p'&&u.team!=='a'&&fogAt(u.x,u.y)!==2)continue;drawUnit(u);if(selU.has(u.id)){ctx.lineWidth=0.08;ctx.strokeStyle='#fff';ctx.beginPath();ctx.arc(u.x,u.y,0.45,0,6.3);ctx.stroke();}}
+ for(const u of S.units){if(!vis(u))continue;if(u.team!=='p'&&u.team!=='a'&&fogAt(u.x,u.y)===0)continue;drawUnit(u);if(selU.has(u.id)){ctx.lineWidth=0.08;ctx.strokeStyle='#fff';ctx.beginPath();ctx.arc(u.x,u.y,0.45,0,6.3);ctx.stroke();}}
  // efektler
  for(const f of FX){
   const a=f.t/f.T;
@@ -190,12 +190,12 @@ function drawMini(force){
  if(force||S.t-mmT>3){
   mmT=S.t;const x=mmBase.getContext('2d'),im=x.createImageData(MW,MH);
   const C={0:[90,150,60],1:[55,110,185],2:[40,100,40],3:[140,140,145],4:[130,90,80],5:[230,190,40],6:[60,130,60]};
-  for(let i=0;i<NN;i++){const c=C[T[i]]||C[0],m=FOG[i]===0?0:FOG[i]===1?0.55:1;im.data[i*4]=c[0]*m;im.data[i*4+1]=c[1]*m;im.data[i*4+2]=c[2]*m;im.data[i*4+3]=255;}
+  for(let i=0;i<NN;i++){const c=C[T[i]]||C[0],m=FOG[i]===0?0:1;im.data[i*4]=c[0]*m;im.data[i*4+1]=c[1]*m;im.data[i*4+2]=c[2]*m;im.data[i*4+3]=255;}
   x.putImageData(im,0,0);
  }
  const K=mmc.width/MW;mctx.imageSmoothingEnabled=false;mctx.drawImage(mmBase,0,0,mmc.width,mmc.height);
  for(const b of S.blds){if(b.team!=='p'&&fogAt(b.x+b.w/2,b.y+b.h/2)===0)continue;mctx.fillStyle=b.team==='p'?'#4da3ff':b.team==='b'?'#ff3b3b':'#ddd';mctx.fillRect(b.x*K,b.y*K,Math.max(2,b.w*K),Math.max(2,b.h*K));}
- for(const u of S.units){if(u.team==='p'||(u.team==='w'&&u.t!=='kurt'))continue;if(u.st!=='raid'&&fogAt(u.x,u.y)!==2)continue;mctx.fillStyle=TEAMCOL[u.team];mctx.fillRect(u.x*K-1,u.y*K-1,2,2);}
+ for(const u of S.units){if(u.team==='p'||(u.team==='w'&&u.t!=='kurt'))continue;if(u.st!=='raid'&&fogAt(u.x,u.y)===0)continue;mctx.fillStyle=TEAMCOL[u.team];mctx.fillRect(u.x*K-1,u.y*K-1,2,2);}
  const s=sc(),vw=CW/s,vh=CH/s;
  mctx.strokeStyle='#fff';mctx.lineWidth=1;mctx.strokeRect((S.cam.x-vw/2)*K,(S.cam.y-vh/2)*K,vw*K,vh*K);
 }

@@ -63,7 +63,7 @@ function paintRoad(px,py){
 }
 function unitAt(t,filter){
  let best=null,bd=0.8;
- for(const u of S.units){if(u.dead||!filter(u))continue;if(u.team!=='p'&&u.team!=='a'&&fogAt(u.x,u.y)!==2)continue;const d=Math.hypot(u.x-t.x,u.y-t.y);if(d<bd){bd=d;best=u;}}
+ for(const u of S.units){if(u.dead||!filter(u))continue;if(u.team!=='p'&&u.team!=='a'&&fogAt(u.x,u.y)===0)continue;const d=Math.hypot(u.x-t.x,u.y-t.y);if(d<bd){bd=d;best=u;}}
  return best;
 }
 function bldAt(t){const x=Math.floor(t.x),y=Math.floor(t.y);if(!inMap(x,y)||FOG[y*MW+x]===0)return null;const id=OCC[y*MW+x];return id?BM.get(id):null;}
@@ -75,10 +75,11 @@ function onTap(px,py){
  // seçili askerlere komut
  if(UI.sel&&UI.sel.kind==='u'){
   const us=UI.sel.ids.map(id=>UM.get(id)).filter(Boolean);
-  const cmdable=us.filter(u=>!S.founded||UT[u.t].mil);
+  const cmdable=us;
   if(cmdable.length){
    const en=unitAt(t,u=>u.team!=='p'&&u.team!=='a'&&u.team!=='f')||(()=>{const b=bldAt(t);return b&&b.team==='b'?b:null;})();
-   if(en&&S.founded){cmdAttack(cmdable,en);return;}
+   const mil=cmdable.filter(u=>UT[u.t].mil);
+   if(en&&S.founded&&mil.length){cmdAttack(mil,en);return;}
    const mine=unitAt(t,u=>u.team==='p');
    if(!(mine&&S.founded)){cmdMove(cmdable,t.x,t.y,S.founded);return;}
   }
@@ -115,10 +116,12 @@ function boot(){
  let loaded=false;
  try{loaded=!!localStorage.getItem('ky_save');}catch(e){}
  const start=(cont)=>{
-  if(cont&&loadGame()){}else newGame();
-  clampCam();buildBar();updHint();drawMini(true);
-  if(!S.founded)showModal('🏰 Krallık Yolu','Sürgündeki kafilen yeni bir yurt arıyor. Haritada gezin (sürükle, iki parmakla yakınlaştır), uygun bir yer bul ve "Köyü Kur" düğmesine bas.\n\nGörev: köyünü büyüt, haydutlara karşı koy, komşu krallarla diplomasi yap ve krallığını ilan et.',[{t:'Başla'}]);
+  const go=()=>{
+   clampCam();buildBar();updHint();drawMini(true);
+   if(!S.founded)showModal('🏰 Krallık Yolu','Sürgündeki kafilen yeni bir yurt arıyor. Haritada gezin (sürükle, iki parmakla yakınlaştır), uygun bir yer bul ve "Köyü Kur" düğmesine bas.\n\nGörev: köyünü büyüt, haydutlara karşı koy, komşu krallarla diplomasi yap ve krallığını ilan et.',[{t:'Başla'}]);
+  };
   requestAnimationFrame(frame);
+  if(cont&&loadGame())go();else newGameSetup(go);
  };
  if(loaded){
   S=null;showModal('💾 Kayıtlı oyun','Kayıtlı bir oyun bulundu.',[{t:'Devam et',fn:()=>start(true)},{t:'Yeni oyun',fn:()=>{try{localStorage.removeItem('ky_save');}catch(e){}start(false);}}]);

@@ -1,6 +1,9 @@
 'use strict';
 // ===== BİRİMLER: köylü işleri, savaş, bina güncellemesi =====
-const JOBRES={wood:[2,'wood'],stone:[3,'stone'],iron:[4,'iron'],gold:[5,'gold'],forage:[6,'food']};
+const JOBRES={wood:[2,'wood'],lum:[2,'wood'],mine:[3,'stone'],forage:[6,'food']};
+const ORET={stone:3,iron:4,gold:5};
+function resOf(u){const j=u.job;if(j==='mine'){const b=BM.get(u.wb),o=(b&&b.ore)||'stone';return[ORET[o],o];}return JOBRES[j];}
+const HAUL=10,HUTCAP=60;
 const JOBBT={};JOBS.forEach(j=>{if(j.bt)JOBBT[j.id]=j.bt;});
 const FARMS=[1.0,1.4,1.2,0.25],HERDS=[0.8,1,1,0.6],FORAGES=[1,1.2,1.6,0.15];
 
@@ -18,8 +21,7 @@ function gatherRate(j){
  if(j==='forage')return 0.9*fxm('forage')*FORAGES[seas()]*happyMul();
  return 0.9*fxm('gather')*tool*(seas()===3?0.8:1)*happyMul();
 }
-function findRes(j,x,y){
- const ty=JOBRES[j][0];let best=-1,bd=1e9;
+function findRes(ty,x,y){let best=-1,bd=1e9;
  for(let i=0;i<NN;i++){
   if(T[i]!==ty||RA[i]<=0||UNRE[i]>S.t)continue;
   const dx=i%MW+0.5-x,dy=((i/MW)|0)+0.5-y,d=dx*dx+dy*dy;
@@ -28,10 +30,22 @@ function findRes(j,x,y){
  return best;
 }
 function canDrop(b,rk){const d=BT[b.t].drop;return d&&(d===1||d.includes(rk));}
+function dropTarget(u,rk){
+ let best=null,bs=1e9;
+ for(const b of S.blds){
+  if(b.team!=='p'||!b.done||!canDrop(b,rk))continue;
+  const hut=b.t==='oduncu'||b.t==='maden';
+  if(hut&&(b.buf||0)>=HUTCAP)continue;
+  const s=dEnt(u,b)*(hut?0.6:1);
+  if(s<bs){bs=s;best=b;}
+ }
+ return best;
+}
 function toDrop(u){
- const rk=u.job==='hunt'?'food':(JOBRES[u.job]&&JOBRES[u.job][1]);
- const d=nearestB(u,b=>b.team==='p'&&b.done&&canDrop(b,rk));
+ const rk=u.job==='hunt'?'food':(resOf(u)&&resOf(u)[1]);
+ const d=dropTarget(u,rk);
  if(!d){u.st='idle';u.wait=2;return;}
+ u.dbid=d.id;
  if(setPath(u,d.x,d.y,d.w,d.h,1,true)===0){u.st='idle';u.wait=1;return;}
  u.st='toDrop';
 }
@@ -45,11 +59,42 @@ function freeSlotBuilding(u,bt){
  }
  return best;
 }
+function haulSite(u){
+ let best=null,bd=1e9;
+ for(const b of S.blds){if(b.team!=='p'||b.done||!b.need||(b.mat||0)>=b.need-0.5)continue;const d=dEnt(u,b);if(d<bd){bd=d;best=b;}}
+ return best;
+}
+function haulStart(u){
+ const s=haulSite(u);if(!s){u.wait=2;return;}
+ u.sb=s.id;
+ if(u.carry>0){if(setPath(u,s.x,s.y,s.w,s.h,1,false)===1){u.st='hsite';return;}u.carry=0;}
+ const dp=nearestB(u,b=>b.team==='p'&&b.done&&(b.t==='depo'||b.t==='tc'));
+ if(!dp){u.wait=2;return;}
+ if(setPath(u,dp.x,dp.y,dp.w,dp.h,1,false)===0){u.wait=1.5;return;}
+ u.st='hdepo';
+}
+function haulLoad(u){
+ const s=BM.get(u.sb);
+ if(!s||s.done){u.st='idle';return;}
+ u.carry=Math.min(HAUL,Math.max(1,Math.ceil((s.need||0)-(s.mat||0))));
+ u.carry=Math.max(1,u.carry);
+ if(setPath(u,s.x,s.y,s.w,s.h,1,false)===0){u.carry=0;u.st='idle';u.wait=1;return;}
+ u.st='hsite';
+}
 function startJob(u){
  const j=u.job;if(!j)return;
+ if(j==='haul'){haulStart(u);return;}
  if(JOBRES[j]){
+  let hb=null;
+  if(j==='lum'||j==='mine'){
+   hb=u.wb&&BM.get(u.wb);
+   if(!hb||hb.hp<=0||!hb.done||hb.t!==JOBBT[j])hb=freeSlotBuilding(u,JOBBT[j]);
+   if(!hb){u.wb=0;u.wait=2;return;}
+   u.wb=hb.id;if(!hb.wk.includes(u.id))hb.wk.push(u.id);
+  }
+  const rs=resOf(u);
   let i=u.ti;
-  if(!(i>=0&&T[i]===JOBRES[j][0]&&RA[i]>0&&UNRE[i]<=S.t))i=findRes(j,u.x,u.y);
+  if(!(i>=0&&T[i]===rs[0]&&RA[i]>0&&UNRE[i]<=S.t))i=hb?findRes(rs[0],hb.x+hb.w/2,hb.y+hb.h/2):findRes(rs[0],u.x,u.y);
   if(i<0||!nearestB(u,b=>b.team==='p'&&b.done&&BT[b.t].drop)){u.wait=3;return;}
   u.ti=i;
   const r=setPath(u,i%MW,(i/MW)|0,1,1,1,false);
@@ -134,23 +179,31 @@ function updVillager(u,dt){
   case 'toRes':if(walkTo(u,dt))u.st='gather';break;
   case 'gather':{
    const i=u.ti,j=u.job;
-   if(!j||!JOBRES[j]||i<0||T[i]!==JOBRES[j][0]||RA[i]<=0){u.ti=-1;if(u.carry>0.5)toDrop(u);else u.st='idle';break;}
+   if(!j||!JOBRES[j]||i<0||T[i]!==resOf(u)[0]||RA[i]<=0){u.ti=-1;if(u.carry>0.5)toDrop(u);else u.st='idle';break;}
    const a=Math.min(gatherRate(j)*dt,RA[i],10-u.carry);
    u.carry+=a;RA[i]-=a;
    if(RA[i]<=0.01){RA[i]=0;T[i]=0;}
    if(u.carry>=9.99||RA[i]<=0){if(u.carry>0.5)toDrop(u);else u.st='idle';}
    break;}
   case 'toDrop':
-   if(walkTo(u,dt)){const rk=u.job==='hunt'?'food':(JOBRES[u.job]&&JOBRES[u.job][1]);if(u.carry>0&&rk){addRes(rk,u.carry);if(S.res.alet>0)S.res.alet=Math.max(0,S.res.alet-0.12);}if(u.job==='hunt'&&u.carry>0)addRes('deri',1);if(u.job==='hunt')S.stats.hunted=(S.stats.hunted||0)+1;u.carry=0;u.st='idle';}
+   if(walkTo(u,dt)){const rk=u.job==='hunt'?'food':(resOf(u)&&resOf(u)[1]);if(u.carry>0&&rk){const db=BM.get(u.dbid);if(db&&(db.t==='oduncu'||db.t==='maden'))db.buf=(db.buf||0)+u.carry;addRes(rk,u.carry);if(S.res.alet>0)S.res.alet=Math.max(0,S.res.alet-0.12);}if(u.job==='hunt'&&u.carry>0)addRes('deri',1);if(u.job==='hunt')S.stats.hunted=(S.stats.hunted||0)+1;u.carry=0;u.st='idle';}
    break;
   case 'toWork':if(walkTo(u,dt))u.st='work';break;
+  case 'hdepo':if(walkTo(u,dt)){haulLoad(u);}break;
+  case 'hsite':if(walkTo(u,dt)){const s=BM.get(u.sb);if(s&&!s.done)s.mat=Math.min(s.need||1e9,(s.mat||0)+u.carry);u.carry=0;u.st='idle';u.wait=0.3;}break;
+  case 'cmd':
+   if(!u.path){if(u.cmdGo){u.cmdGo=0;u.st='idle';u.wait=0.6;break;}u.cmdGo=1;if(setPath(u,u.gx,u.gy,1,1,0,true)!==1){u.cmdGo=0;u.st='idle';}}
+   else if(walkTo(u,dt)){u.cmdGo=0;u.st='idle';u.wait=0.8;}
+   break;
   case 'work':workTick(u,dt);break;
   case 'toSite':if(walkTo(u,dt))u.st='build';break;
   case 'build':{
    const b=BM.get(u.sb);
    if(!b||b.team!=='p'||b.hp<=0){u.st='idle';u.sb=0;break;}
    if(!b.done){
-    b.prog=Math.min(1,b.prog+dt/BT[b.t].time);
+    const lim=(S.haulN>0&&b.need)?Math.min(1,(b.mat||0)/b.need):1;
+    if(b.prog<lim)b.prog=Math.min(lim,b.prog+dt/BT[b.t].time);
+    if(S.haulN===0&&b.need)b.mat=b.need*b.prog;
     b.hp=Math.min(b.mhp,b.mhp*(0.1+0.9*b.prog));
     if(b.prog>=1)finishB(b);
    }else if(b.hp<b.mhp)b.hp=Math.min(b.mhp,b.hp+8*dt);
@@ -452,6 +505,7 @@ function updBuilding(b,dt){
    log('✔ '+UT[it.u].n+' hazır.',p.x,p.y);
   }
  }
+ if((b.t==='oduncu'||b.t==='maden')&&b.buf>0)b.buf=Math.max(0,b.buf-1.5*dt);
  if(b.t==='hastane'){
   let docs=0;
   for(const id of b.wk){const w=UM.get(id);if(w&&w.st==='work')docs++;}

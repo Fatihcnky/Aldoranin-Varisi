@@ -51,8 +51,8 @@ function revealC(x,y,r){
 }
 function updFog(){
  for(let i=0;i<NN;i++)if(FOG[i]===2)FOG[i]=1;
- for(const u of S.units){if(u.dead||(u.team!=='p'&&u.team!=='a'))continue;revealC(u.x,u.y,u.t==='koylu'?5.5:7);}
- for(const b of S.blds){if(b.team!=='p')continue;const d=BT[b.t];revealC(b.x+b.w/2,b.y+b.h/2,b.t==='tc'?13:(d.rng&&b.done?d.rng+3:(b.done?7:5)));}
+ for(const u of S.units){if(u.dead||(u.team!=='p'&&u.team!=='a'))continue;revealC(u.x,u.y,u.t==='koylu'?8:10);}
+ for(const b of S.blds){if(b.team!=='p')continue;const d=BT[b.t];revealC(b.x+b.w/2,b.y+b.h/2,b.t==='tc'?26:(d.rng&&b.done?d.rng+5:(b.done?9:6)));}
 }
 function getEnt(id){return UM.get(id)||BM.get(id);}
 function dEnt(u,e){

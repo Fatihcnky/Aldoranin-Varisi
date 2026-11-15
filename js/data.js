@@ -13,10 +13,10 @@ const RI={food:'🍖',wood:'🌲',stone:'🧱',iron:'🔩',gold:'💰',silah:'�
 
 const JOBS=[
  {id:'build',n:'İnşaatçı',ic:'🔨',d:'Yeni binaları inşa eder.'},
- {id:'wood',n:'Oduncu',ic:'🌲',d:'Ağaç keser, depoya taşır.'},
- {id:'stone',n:'Taş Ocakçısı',ic:'🧱',d:'Taş çıkarır.'},
- {id:'iron',n:'Demirci Madenci',ic:'🔩',d:'Demir cevheri çıkarır.'},
- {id:'gold',n:'Altın Madencisi',ic:'💰',d:'Altın damarı işler.'},
+ {id:'haul',n:'Taşıyıcı',ic:'📦',d:'Depodan şantiyeye malzeme taşır (inşaat sırasında).'},
+ {id:'wood',n:'Serbest Oduncu',ic:'🌲',d:'Ağacı her yerden keser, en yakın depoya taşır.'},
+ {id:'lum',n:'Oduncu',ic:'🪓',bt:'oduncu',d:'Oduncu kulübesine bağlı: kulübe çevresinde keser, önce kulübeye, dolunca depoya taşır.'},
+ {id:'mine',n:'Madenci',ic:'⛏',bt:'maden',d:'Madenci kulübesine bağlı: kulübede seçilen maden türünü (taş/demir/altın) çıkarır.'},
  {id:'forage',n:'Toplayıcı',ic:'🍓',d:'Yabani meyve toplar.'},
  {id:'farm',n:'Çiftçi',ic:'🌾',bt:'ciftlik',d:'Çiftlikte çalışır (çiftlik başına 3).'},
  {id:'herd',n:'Çoban',ic:'🐑',bt:'agil',d:'Ağılda hayvan bakar (ağıl başına 3).'},
@@ -26,8 +26,8 @@ const JOBS=[
  {id:'trade',n:'Tüccar',ic:'💱',bt:'pazar',d:'Pazarda altın kazandırır.'},
  {id:'hunt',n:'Avcı',ic:'🦌',bt:'avci',d:'Geyik ve yaban domuzu avlar (kurtlara dikkat).'}
 ];
-const JOB_ORDER=['farm','herd','forage','hunt','wood','build','stone','iron','gold','smith','fire','doc','trade'];
-const SLOTS={ciftlik:3,agil:3,demirci:3,itfaiye:2,hastane:3,pazar:2,avci:2};
+const JOB_ORDER=['farm','herd','forage','hunt','lum','mine','wood','haul','build','smith','fire','doc','trade'];
+const SLOTS={oduncu:4,maden:4,ciftlik:3,agil:3,demirci:3,itfaiye:2,hastane:3,pazar:2,avci:2};
 
 // Binalar. age: gereken çağ, rank: gereken ünvan
 const BT={

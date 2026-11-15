@@ -18,7 +18,7 @@ function newGame(seed){
  const st=S.start;
  for(let i=0;i<6;i++)mkUnit('koylu','p',st.x+0.5+(i%3)*0.8-0.8,st.y+0.5+(i/3|0)*0.8);
  for(let i=0;i<3;i++)mkUnit('mizrakli','p',st.x+0.5+i*0.8-0.8,st.y+2);
- updFog();
+ updFog();revealC(S.start.x,S.start.y,34);
  return S;
 }
 function spawnWild(t,minD){
@@ -73,7 +73,8 @@ function balanceJobs(){
  const vs=S.units.filter(u=>u.team==='p'&&u.t==='koylu'&&!u.dead);
  const cnt={};vs.forEach(u=>{if(u.job)cnt[u.job]=(cnt[u.job]||0)+1;});
  const sites=S.blds.some(b=>b.team==='p'&&!b.done);
- const want=id=>{let w=Math.min(S.jobs[id]||0,jobCap(id));if(id==='build'&&sites&&w<1)w=1;return w;};
+ S.haulN=vs.filter(u=>u.job==='haul').length;
+ const want=id=>{let w=Math.min(S.jobs[id]||0,jobCap(id));if(id==='build'&&sites&&w<1)w=1;if(id==='haul'&&!sites)w=0;return w;};
  JOBS.forEach(j=>{
   let extra=(cnt[j.id]||0)-want(j.id);
   if(extra>0){
@@ -97,11 +98,12 @@ function jobCount(id){return S.units.filter(u=>u.team==='p'&&u.t==='koylu'&&!u.d
 function villagerCount(){return S.units.filter(u=>u.team==='p'&&u.t==='koylu'&&!u.dead).length;}
 function autoJobs(){
  const n=villagerCount();
- const j={build:Math.max(1,Math.round(n*0.15)),farm:0,herd:0,forage:Math.round(n*0.12),wood:Math.round(n*0.25),stone:Math.round(n*0.1),iron:0,gold:0,smith:0,fire:0,doc:0,trade:0};
+ const j={build:Math.max(1,Math.round(n*0.15)),haul:n>=7?2:1,farm:0,herd:0,forage:Math.round(n*0.12),wood:0,lum:0,mine:0,smith:0,fire:0,doc:0,trade:0,hunt:0};
+ j.lum=Math.min(jobCap('lum'),Math.round(n*0.25));
+ j.wood=Math.max(0,Math.round(n*0.25)-j.lum);
+ j.mine=Math.min(jobCap('mine'),Math.round(n*0.12));
  j.farm=Math.min(jobCap('farm'),Math.max(0,Math.round(n*0.3)));
  j.herd=Math.min(jobCap('herd'),Math.round(n*0.1));
- if(S.age>=1){j.iron=Math.round(n*0.08);}
- if(S.age>=2){j.gold=Math.round(n*0.05);}
  j.smith=Math.min(jobCap('smith'),1);
  j.fire=Math.min(jobCap('fire'),1);
  j.doc=Math.min(jobCap('doc'),1);
@@ -188,7 +190,7 @@ function sim(dt){
  for(let i=FX.length-1;i>=0;i--){FX[i].t-=dt;if(FX[i].t<=0)FX.splice(i,1);}
  accF+=dt;if(accF>=0.4){accF=0;updFog();}
  accJ+=dt;
- if(accJ>=1){accJ=0;if(S.founded&&((S.t|0)%3===0))freeTrapped();if(S.founded){balanceJobs();checkStory();checkEnd();}}
+ if(accJ>=1){accJ=0;if(typeof flowTick==='function')flowTick();if(S.founded&&((S.t|0)%3===0))freeTrapped();if(S.founded){balanceJobs();checkStory();checkEnd();}}
 }
 function checkStory(){
  if(S.story>=STORY.length)return;
@@ -204,7 +206,7 @@ function checkStory(){
 function checkEnd(){
  if(S.done)return;
  if(!S.units.some(u=>u.team==='p')&&!S.blds.some(b=>b.team==='p')){
-  S.done=true;showModal('☠ Yenilgi','Köyün yok oldu. Yeniden başlayabilirsin.',[{t:'Yeni oyun',fn:()=>{try{localStorage.removeItem('ky_save');}catch(e){}newGame();uiReset();}}]);
+  S.done=true;showModal('☠ Yenilgi','Köyün yok oldu. Yeniden başlayabilirsin.',[{t:'Yeni oyun',fn:()=>{try{localStorage.removeItem('ky_save');}catch(e){}newGameSetup(uiReset);}}]);
  }
 }
 
@@ -249,7 +251,9 @@ function placeBuilding(t,x,y){
  if(placeReason(t)||!canPlace(t,x,y))return false;
  if(!afford(d.cost)){log('⛔ Kaynak yetersiz.');return false;}
  pay(d.cost);
- const b=mkB(t,'p',x,y,t==='tc',t==='ev'?{fam:pick(MNAMES.concat(FNAMES))}:null);
+ const b=mkB(t,'p',x,y,t==='tc',t==='ev'?{fam:pick(MNAMES.concat(FNAMES))}:{});
+ if(!b.done){b.need=(d.cost.wood||0)+(d.cost.stone||0)+(d.cost.iron||0);b.mat=0;}
+ if(t==='maden')b.ore='stone';
  FX.push({k:'poof',x:x+d.w/2,y:y+d.h/2,t:0.5,T:0.5});
  return b;
 }
@@ -292,7 +296,7 @@ function cmdMove(units,x,y,attack){
   const ox=(k%4)-1.5,oy=((k/4)|0)-1;k++;
   let gx=Math.floor(x+ox*0.9),gy=Math.floor(y+oy*0.9);
   if(!walk(gx,gy)){gx=Math.floor(x);gy=Math.floor(y);}
-  u.st=attack?'amove':'move';u.gx=gx;u.gy=gy;u.path=null;u.tg=0;u.forced=0;u.wait=0;
+  u.st=attack?'amove':(S.founded&&u.t==='koylu'?'cmd':'move');u.gx=gx;u.gy=gy;u.path=null;u.tg=0;u.forced=0;u.wait=0;
  }
 }
 function cmdAttack(units,e){for(const u of units){u.tg=e.id;u.forced=1;u.st='amove';u.gx=Math.floor(e.x);u.gy=Math.floor(e.y);u.path=null;}}

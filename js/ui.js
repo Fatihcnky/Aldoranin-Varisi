@@ -176,16 +176,23 @@ function households(){
  return out;
 }
 function famName(b){if(!b.fam)b.fam=pick(MNAMES.concat(FNAMES));return b.fam;}
+const MOVEIC='<svg width="16" height="16" viewBox="0 0 24 24" style="vertical-align:-3px"><path d="M12 1l4 4h-3v6h6V8l4 4-4 4v-3h-6v6h3l-4 4-4-4h3v-6H5v3l-4-4 4-4v3h6V5H8z" fill="#fff"/></svg>';
 function pSel(){
  const b=BM.get(UI.sel.id);if(!b)return '';
  const d=BT[b.t];
  let h='<h4>'+d.ic+' '+d.n+(b.done?'':' (inşaat %'+Math.round(b.prog*100)+')')+'</h4><small>'+d.d+'<br>❤ '+Math.ceil(b.hp)+'/'+b.mhp+(b.fire>0?' · 🔥 yanıyor':'')+'</small>';
+ if(b.team==='p'&&b.done&&(b.t==='oduncu'||b.t==='maden')){
+  const jid=b.t==='oduncu'?'lum':'mine',have=jobCount(jid),mine=S.units.filter(u=>u.wb===b.id&&u.job===jid&&!u.dead).length;
+  h+='<div>👷 Çalışan: <b>'+mine+'/'+SLOTS[b.t]+'</b> · 📦 Kulübe stoğu: '+Math.round(b.buf||0)+'/'+HUTCAP+' <small>(dolunca işçiler depoya taşır)</small></div>';
+  if(b.t==='maden'){h+='<div class="row"><b>Çıkarılacak maden:</b>'+['stone','iron','gold'].map(o=>'<button data-a="ore" data-v="'+b.id+'" data-w="'+o+'"'+((b.ore||'stone')===o?' style="background:#6a4e22;border-color:#ffd070"':'')+'>'+RI[o]+' '+RN[o]+'</button>').join('')+'</div><small>Bu kulübedeki işçiler yalnızca seçtiğin madeni çıkarır.</small>';}
+  h+='<div class="row">'+btn('➕ İşçi ekle','jp',jid)+btn('➖ İşçi çıkar','jm',jid)+'<small>Toplam '+jid+' işçi: '+have+'/'+(S.jobs[jid]||0)+' (Halk menüsünden de ayarlanır)</small></div>';
+ }
  if(b.team==='p'&&b.done&&b.t==='ev'){const n=households().get(b.id)||0,kids=Math.round(n*0.35);h+='<div>👪 <b>'+famName(b)+' Hanesi</b>: '+n+' kişi ('+(n-kids)+' yetişkin, '+kids+' çocuk)'+(b.lvl?' · ⭐ Taş ev':'')+'</div>';}
  if(b.team==='p'&&b.done&&UPG[b.t]){const u=UPG[b.t];if(b.lvl)h+='<div>⭐ '+u.n+' (yükseltildi)</div>';else{const why=u.age>S.age?'Çağ: '+AGES[u.age]:'';h+='<div class="row">'+btn('⬆ '+u.n,'upg',b.id,!!why||!afford(u.cost))+'<small>'+(why?'🔒 '+why:u.d+' '+cstr(u.cost))+'</small></div>';}}
  if(b.team==='p'&&b.done){
   trainList(b).forEach(t=>{const u=UT[t],why=canTrain(t);h+='<div class="row">'+btn(u.g+' '+u.n,'train',t,!!why,b.id)+btn('×5','train5',t,!!why,b.id)+'<small>'+(why?'🔒 '+why:cstr(u.cost))+'</small></div>';});
   if(b.q.length)h+='<small>Kuyruk: '+b.q.map(q=>UT[q.u].g).join(' ')+'</small>';
-  if(b.t!=='tc')h+='<div class="row">'+btn('🚚 Taşı','move',b.id)+btn('🗑 Yık (iade %50)','demolish',b.id)+'</div>';
+  if(b.t!=='tc')h+='<div class="row">'+btn(MOVEIC+' Taşı','move',b.id)+btn('🗑 Yık (iade %50)','demolish',b.id)+'</div>';
  }
  if(b.team==='b')h+='<small>Düşman kampı! Askerlerinle saldır.</small>';
  return h;
@@ -194,7 +201,7 @@ function updPanel(force){
  const p=$('panel');
  let h='';
  if(UI.sel&&UI.sel.kind==='b')h=pSel();
- else if(UI.tab)h={build:pBuild,people:pPeople,army:pArmy,tech:pTech,prog:pProg,dip:pDip,mkt:pMkt,quest:pQuest,dyn:pDyn}[UI.tab]();
+ else if(UI.tab)h={build:pBuild,people:pPeople,army:pArmy,tech:pTech,prog:pProg,dip:pDip,mkt:pMkt,quest:pQuest,dyn:pDyn,res:pRes}[UI.tab]();
  if(!h){p.style.display='none';UI.lastPanel='';return;}
  h='<div style="text-align:right">'+btn('✖ Kapat','closep')+'</div>'+h;
  if(h!==UI.lastPanel||force){p.innerHTML=h;UI.lastPanel=h;}
@@ -257,6 +264,7 @@ function act(a,v,w,el){
   case 'marry':proposeMarriage(+v);break;
   case 'selarmy':UI.sel={kind:'u',ids:soldiers().map(u=>u.id)};UI.tab=null;updPanel(true);break;
   case 'retreat':{const tc=mainTC();if(tc)cmdMove(soldiers(),tc.x+tc.w/2,tc.y+tc.h+1,false);break;}
+  case 'ore':{const b=BM.get(+v);if(b&&b.t==='maden'){b.ore=w;for(const u of S.units)if(u.wb===b.id&&u.job==='mine'){u.ti=-1;u.carry=0;u.st='idle';u.path=null;}log('⛏ Madenci kulübesi artık '+RN[w]+' çıkaracak.');}updPanel(true);break;}
   case 'upg':{const b=BM.get(+v);if(b&&UPG[b.t]&&!b.lvl&&UPG[b.t].age<=S.age&&afford(UPG[b.t].cost)){pay(UPG[b.t].cost);b.lvl=1;b.hp=Math.max(b.hp,b.mhp);log('⬆ '+UPG[b.t].n+' tamamlandı.',b.x,b.y);}updPanel(true);break;}
   case 'demolish':{const b=BM.get(+v);if(b){demolish(b);UI.sel=null;}updPanel(true);break;}
  }
