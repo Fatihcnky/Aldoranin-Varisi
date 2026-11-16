@@ -14,13 +14,15 @@ const FNAMES=['Aelith','Eadgyth','Matilda','Ingrid','Sibyl','Rowena','Isolde','G
 const HOUSES=['Ravenmoor','Oakheart','Stormvale','Blackwood','Ironhall','Silverfen'];
 const TAXN=['Düşük','Normal','Yüksek'];
 const TAXG=[0.5,1,1.8],TAXH=[8,0,-12];
+const HEROAGE=14,DYT=7;
 function pick(a){return a[Math.floor(Math.random()*a.length)];}
 function nm(f){return pick(f?FNAMES:MNAMES);}
 function traitKey(){return pick(Object.keys(TRAITS));}
 function rulerTitle(){const r=S.dyn.ruler;return r.female?'Leydi':'Lord';}
 function newDynasty(){
  const fem=Math.random()<0.5;
- S.dyn={house:pick(HOUSES),ruler:{name:nm(fem),age:26+ri(0,8),trait:traitKey(),female:fem},spouse:null,heirs:[],crisis:0,festCool:0,births:0};
+ const sf=Math.random()<0.5;
+ S.dyn={house:pick(HOUSES),ruler:{name:nm(fem),age:24+ri(0,6),trait:traitKey(),female:fem},spouse:null,heirs:[{name:nm(sf),age:11,trait:traitKey(),female:sf,sib:1}],crisis:0,festCool:0,births:0,eduCool:0};
  S.happy=55;S.taxRate=1;S.fest=0;S.unrest=0;S.recentLoss=0;S.hardWinter=false;
 }
 function fxTrait(k){const t=S.dyn&&S.dyn.ruler&&TRAITFX[S.dyn.ruler.trait];return t&&t[k]?t[k]:1;}
@@ -108,7 +110,7 @@ function heroSkill(who,k){const p=personOf(who);if(!p||!HSK[k]||!(p.sp>0))return
 function heroOf(who){return S.units.find(u=>u.t==='kahraman'&&!u.dead&&u.who===who);}
 function summonHero(who){
  const per=personOf(who),tc=mainTC();
- if(!per||per.age<16||heroOf(who)||!tc)return false;
+ if(!per||per.age<HEROAGE||heroOf(who)||!tc)return false;
  if(popNow()+popQueued()>=popCap()){log('⛔ Barınak yetersiz.');return false;}
  const p=spawnPos(tc),u=mkUnit('kahraman','p',p.x,p.y,{who,hn:per.name,st:'idle'});
  u.hp=u.mhp=UT.kahraman.hp;heroApply(u);u.hp=u.mhp;
@@ -134,7 +136,7 @@ function proposeMarriage(i){
 function succession(why){
  const D=S.dyn,old=D.ruler;
  dismissHero('ruler');
- const adults=D.heirs.filter(h=>h.age>=16).sort((a,b)=>b.age-a.age);
+ const adults=D.heirs.filter(h=>h.age>=HEROAGE).sort((a,b)=>b.age-a.age);
  D.spouse=null;
  if(adults.length){
   const n=adults[0];D.heirs=D.heirs.filter(h=>h!==n);D.ruler=n;{const hh=heroOf('heir:'+n.name);if(hh)hh.who='ruler';}S.happy=Math.max(0,S.happy-5);
@@ -152,20 +154,21 @@ function succession(why){
 function dynYear(){
  const D=S.dyn,r=D.ruler;
  r.age++;if(D.spouse)D.spouse.age++;D.heirs.forEach(h=>h.age++);
- if(D.crisis>0&&D.heirs.length===0&&r.age>=16)D.crisis=Math.max(0,D.crisis-1);
+ if(D.crisis>0&&D.heirs.length===0&&r.age>=HEROAGE)D.crisis=Math.max(0,D.crisis-1);
  // varis ergenliğe girdi
- D.heirs.forEach(h=>{if(h.age===16)log('🎓 Varis '+h.name+' 16 yaşına girdi, artık tahta geçebilir.');});
+ D.heirs.forEach(h=>{if(h.age===HEROAGE)log('🎓 Varis '+h.name+' '+HEROAGE+' yaşına girdi, artık tahta geçebilir.');});
  // ölüm
- const p=r.age>=50?(r.age-49)*0.07:0.006;
- if(Math.random()<p){succession(r.age>=50?'yaşlılıktan hayatını kaybetti':'ani bir hastalıktan öldü');return;}
+ D.eduCool=Math.max(0,(D.eduCool||0)-1);
+ const p=r.age>=55?(r.age-54)*0.05:0.002;
+ if(Math.random()<p){succession(r.age>=55?'yaşlılıktan hayatını kaybetti':'ani bir hastalıktan öldü');return;}
  // doğum
- if(D.spouse&&D.spouse.age<44&&D.heirs.length<4&&Math.random()<0.55){
+ if(D.spouse&&D.spouse.age<44&&D.heirs.length<4&&Math.random()<0.1){
   const f=Math.random()<0.5,h={name:nm(f),age:0,trait:traitKey(),female:f};
   D.heirs.push(h);D.births++;
   showModal('👶 Hanedana yeni üye','Hane '+D.house+'\'de bir '+(f?'kız':'erkek')+' çocuk doğdu: '+h.name+' ('+TRAITS[h.trait].n+'). Halk şenleniyor.',[{t:'Sevinç!',fn:()=>{S.happy=Math.min(100,S.happy+6);}}]);
  }
  // evlilik teklifi
- if(!D.spouse&&r.age>=18&&Math.random()<0.6){
+ if(!D.spouse&&r.age>=18&&Math.random()<0.12){
   const c=S.kings.map((k,i)=>({k,i})).filter(o=>o.k.rel>=15&&!o.k.war&&!o.k.dead);
   if(c.length){
    const o=pick(c),K=KINGS[o.i];
@@ -175,4 +178,11 @@ function dynYear(){
    ]);
   }
  }
+}
+
+function eduHeir(){
+ const D=S.dyn,kid=D.heirs.filter(x=>x.age<HEROAGE+2).sort((a,b)=>b.age-a.age)[0];
+ if(!kid||(D.eduCool||0)>0||S.res.gold<120)return;
+ S.res.gold-=120;kid.age+=2;D.eduCool=3;
+ log('🎓 '+kid.name+' özel eğitim aldı ('+kid.age+' yaşında).');updPanel(true);
 }

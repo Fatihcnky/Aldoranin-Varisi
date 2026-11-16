@@ -56,8 +56,8 @@ const BT={
  topcu:{n:'Top Dökümhanesi',ic:'💣',w:3,h:3,hp:360,age:4,cost:{wood:200,stone:150,iron:150,gold:100},time:30,col:'#4b4b55',train:['top'],d:'Top üretir (Barut teknolojisi gerekir).'},
  kule:{n:'Gözcü Kulesi',ic:'🗼',w:2,h:2,hp:260,age:0,cost:{wood:90,stone:20},time:14,atk:7,rng:7.5,col:'#8a6a4a',d:'Ucuz savunma: yakındaki düşmanlara ok atar. Kale ünvanı için gerekli.'},
  tkule:{n:'Taş Kule',ic:'🏯',w:2,h:2,hp:520,age:1,cost:{wood:50,stone:160},time:22,atk:13,rng:9,col:'#8a8a8a',d:'Sağlam taş kule: güçlü ok atışı, uzun menzil.'},
- kapi:{n:'Kapı',ic:'🚪',w:1,h:1,hp:220,age:0,cost:{wood:10,stone:2},time:4,arm:2,gate:1,col:'#8a5a2a',d:'Çite/duvara kapı: halk ve askerlerimiz geçer, haydutlar ve düşmanlar geçemez, yıkmak zorunda kalır.'},
- duvar:{n:'Çit / Duvar',ic:'🧱',w:1,h:1,hp:160,age:0,cost:{wood:4,stone:1},time:3,arm:2,col:'#7a6a55',d:'Düşmanları yönlendirir ve yavaşlatır. Seçip parmağını sürükleyerek hat çiz.'},
+ kapi:{n:'Sur Kapısı',ic:'🚪',w:1,h:1,hp:220,age:0,cost:{wood:10,stone:2},time:4,arm:2,gate:1,col:'#8a5a2a',d:'Sura kapı: halk ve askerlerimiz geçer, haydutlar ve düşmanlar geçemez, yıkmak zorunda kalır.'},
+ duvar:{n:'Sur',ic:'🧱',w:1,h:1,hp:160,age:0,cost:{wood:4,stone:1},time:3,arm:2,col:'#7a6a55',d:'Taş sur: düşmanları yönlendirir ve durdurur. Seçip parmağını sürükleyerek hat çiz.'},
  oduncu:{n:'Oduncu Kulübesi',ic:'🪓',w:2,h:2,hp:160,age:0,cost:{wood:50},time:10,col:'#6a4a2a',drop:['wood'],d:'Ormanın yanına kur: oduncular odunu buraya bırakır, yürüyüş kısalır.'},
  maden:{n:'Madenci Kulübesi',ic:'⛏',w:2,h:2,hp:180,age:0,cost:{wood:70,stone:30},time:14,col:'#666',drop:['stone','iron','gold'],d:'Taş ocağı veya maden yanına kur: taş, demir ve altın buraya bırakılır.'},
  avci:{n:'Avcı Kulübesi',ic:'🦌',w:2,h:2,hp:160,age:0,cost:{wood:60},time:12,col:'#7a5a3a',drop:1,d:'2 avcı: geyik ve yaban domuzu avlar (ava dikkat: kurtlar).'},
@@ -99,6 +99,7 @@ const UT={
  okcu:{n:'Okçu',g:'🏹',hp:38,atk:7,rng:6,rof:1.4,spd:2.2,arm:0,cost:{food:40,wood:40},time:12,age:0,mil:1,ranged:1},
  atliokcu:{n:'Atlı Okçu',g:'🏇',hp:55,atk:7,rng:5.5,rof:1.3,spd:3.8,arm:0,cost:{food:60,gold:40},time:16,age:2,mil:1,ranged:1,cav:1},
  atli:{n:'Atlı Şövalye',g:'🐎',hp:110,atk:12,rng:1.4,rof:1.1,spd:3.6,arm:2,cost:{food:80,iron:40,gold:20,silah:1,zirh:1},time:18,age:2,mil:1,cav:1},
+ milis:{n:'Milis',g:'🛡',hp:30,atk:3,rng:1.2,rof:1.2,spd:2.1,arm:0,cost:{},time:0,age:0,mil:1,nopick:1},
  top:{n:'Top',g:'💣',hp:90,atk:50,rng:8,rof:4,spd:1.2,arm:0,cost:{wood:150,iron:100,gold:60,silah:3},time:30,age:4,mil:1,ranged:1,siege:1},
  fkoylu:{n:'Köylü',g:'👨‍🌾',hp:30,atk:2,rng:1,rof:1.5,spd:2.3,arm:0},
  kahraman:{n:'Hükümdar',g:'👑',hp:220,atk:16,rng:1.5,rof:0.9,spd:2.5,arm:4,cost:{},time:0,age:0,mil:1,hero:1},
@@ -113,6 +114,9 @@ const UT={
 const TEAMCOL={p:'#3b82f6',a:'#22c55e',b:'#dc2626',k:'#f59e0b',f:'#a3e635',w:'#8a6a3a'};
 
 const TECH={
+ elarabasi:{n:'El Arabaları',age:0,cost:{wood:70,food:30},time:25,fx:{haul:1.5},d:'Taşıyıcılar tek seferde %50 daha fazla malzeme taşır'},
+ yukarabasi:{n:'Demir Çemberli Yük Arabası',age:2,req:['elarabasi'],cost:{wood:120,iron:60},time:45,fx:{haul:1.5},d:'Taşıyıcı yükü bir %50 daha artar (toplam x2.25)'},
+ milis:{n:'Milis Kuvvetleri',age:1,cost:{food:100,wood:80,gold:30},time:35,fx:{milis:1.3},d:'Milis cephanesi: milis canı ve saldırısı +%30, milis üst sınırı nüfusun %40\'ına çıkar'},
  tasbalta:{n:'Taş Balta',age:0,cost:{food:60,wood:60},time:25,fx:{gather:1.25},d:'Odun, taş, demir, altın toplama +%25'},
  toplayici:{n:'Toplayıcı Sepetleri',age:0,cost:{food:50,wood:40},time:20,fx:{forage:1.3},d:'Meyve toplama +%30'},
  ates:{n:'Ateş Kontrolü',age:0,cost:{wood:80,food:40},time:25,fx:{heat:0.7},d:'Kışın ısınma odunu -%30'},

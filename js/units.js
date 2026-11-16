@@ -76,7 +76,7 @@ function haulStart(u){
 function haulLoad(u){
  const s=BM.get(u.sb);
  if(!s||s.done){u.st='idle';return;}
- u.carry=Math.min(HAUL,Math.max(1,Math.ceil((s.need||0)-(s.mat||0))));
+ u.carry=Math.min(Math.round(HAUL*fxm('haul')),Math.max(1,Math.ceil((s.need||0)-(s.mat||0))));
  u.carry=Math.max(1,u.carry);
  if(setPath(u,s.x,s.y,s.w,s.h,1,false)===0){u.carry=0;u.st='idle';u.wait=1;return;}
  u.st='hsite';
@@ -255,7 +255,7 @@ function dmgOf(a,e){
  }
  const ed=UT[e.t];
  if(d.antiCav&&ed.cav)atk*=d.antiCav;
- const arm=ed.arm+(e.team==='p'?fxa('arm'):0);
+ const arm=ed.arm+(e.ab||0)+(e.team==='p'?fxa('arm'):0);
  return Math.max(1,atk-arm*0.8);
 }
 let lastLogLoss=0;

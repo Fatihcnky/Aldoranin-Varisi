@@ -24,6 +24,7 @@ function mfLook(u){
   const per=personOf(u.who),fem=per?per.female:false;
   return [u.who==='ruler'?(fem?'Queen':'KingMan'):(fem?'Princess':'PrinceMan'),null,0];
  }
+ if(t==='milis')return [u.ab?'ShieldMan':u.atkB>0?'SpearMan':MFVIL[u.id%8],null,0];
  const n=MFSOL[t];if(!n)return null;
  if(u.team==='f'&&KINGS[u.kid])return [n,KINGS[u.kid].col,0.35];
  if(u.team==='k'&&KINGS[u.kid])return [n,KINGS[u.kid].col,0.4];
@@ -36,6 +37,14 @@ function drawCannon(u){
  const fire=u.cd>0&&u.cd>(UT.top.rof||2.5)-0.25,rc=fire?-2.5:0;
  const col=u.team==='b'?'#c62828':(u.team==='p'?'#3a6fd8':'#888');
  ctx.fillStyle='#0003';ctx.beginPath();ctx.ellipse(u.x,u.y+0.3,0.36,0.1,0,0,6.3);ctx.fill();
+ // topçu mürettebatı: topun arkasında yürüyen iki asker
+ {const sh=mfSheet('HalberdMan',u.team==='b'?'#c62828':null,0.4);
+  if(sh){const fd=u.fdir||1,sz=1.5,cn=MFCNT.HalberdMan||[4,6,3];
+   [[-0.62,-0.04,0],[-0.42,0.22,1.7]].forEach(([ox,oy,ph])=>{
+    const row=fire?2:(moved?1:0),n=row===2?(cn[2]||3):(row===1?cn[1]:cn[0]),fr=Math.floor((S.t+u.id*0.37+ph)*(fire?6:moved?10:3))%n;
+    const cx=u.x+ox*fd,cy=u.y+oy+0.3-sz*(30/32);
+    ctx.fillStyle='#0003';ctx.beginPath();ctx.ellipse(cx,u.y+oy+0.3,0.22,0.08,0,0,6.3);ctx.fill();
+    ctx.save();ctx.translate(cx,cy);if(fd<0)ctx.scale(-1,1);ctx.imageSmoothingEnabled=false;ctx.drawImage(sh,fr*32,row*32,32,32,-sz/2,0,sz,sz);ctx.restore();});}}
  ctx.save();ctx.translate(u.x,u.y+0.3);if((u.fdir||1)<0)ctx.scale(-1,1);ctx.scale(1/32,1/32);
  const R=(c,x,y,w,h)=>{ctx.fillStyle=c;ctx.fillRect(x,y,w,h);};
  // namlu
@@ -77,6 +86,15 @@ drawUnit=function(u){
  ctx.save();ctx.translate(px,py);if(fx<0)ctx.scale(-1,1);
  ctx.imageSmoothingEnabled=false;
  ctx.drawImage(sh,fr*32,row*32,32,32,-size/2,0,size,size);
+ if(u.team==='p'&&u.t==='koylu'&&S.founded&&u.job&&u.st!=='sleep'){
+  const j=u.job,sw=Math.sin(S.t*8+u.id)*(working?0.35:0.08);
+  if(j==='haul'){ // el arabası
+   ctx.fillStyle='#5a3a1c';ctx.fillRect(0.12,size*0.56,0.36,0.04);ctx.fillRect(0.12,size*0.5,0.04,0.1);
+   ctx.fillStyle='#8a5a2a';ctx.fillRect(0.3,size*0.52,0.34,0.14);ctx.fillStyle='#6b4423';ctx.fillRect(0.3,size*0.64,0.34,0.03);
+   ctx.fillStyle='#222';ctx.beginPath();ctx.arc(0.66,size*0.7,0.09,0,6.3);ctx.fill();ctx.fillStyle='#999';ctx.beginPath();ctx.arc(0.66,size*0.7,0.04,0,6.3);ctx.fill();}
+  else{const em=j==='hunt'?'🏹':(j==='lum'||j==='wood')?'🪓':j==='mine'?'⛏':j==='build'?'🔨':null;
+   if(em){ctx.save();ctx.translate(0.2,size*0.58);ctx.rotate(sw);ctx.drawImage(spr(em),-0.05,-0.3,0.42,0.42);ctx.restore();}}
+ }
  if(u.fl&&S.t-u.fl<0.15){ctx.globalAlpha=0.4;ctx.fillStyle='#fff';ctx.fillRect(-size*0.2,size*0.35,size*0.4,size*0.55);ctx.globalAlpha=1;}
  ctx.restore();
  if(u.st==='sleep')ctx.drawImage(spr('💤'),u.x+0.1,u.y-0.9,0.5,0.5);
@@ -92,12 +110,14 @@ function wallAt(x,y){
  if(!inMap(x,y))return false;const id=OCC[y*MW+x];if(!id)return false;
  const o=BM.get(id);return !!(o&&(o.t==='duvar'||o.t==='kapi')&&o.team==='p');
 }
+const SURW=1.55,SURH=1.57;
 const _drawBuildingOld=drawBuilding;
 drawBuilding=function(b){
  if(b.t!=='duvar'&&b.t!=='kapi'){_drawBuildingOld(b);
   if((b.t==='agil'||b.t==='ahir')&&b.done&&b.team==='p'){
-   const an=b.t==='agil'?['🐑','🐑','🐏']:['🐎','🐄','🐎'],T2=(S.t||0)*0.6+b.id;
-   an.forEach((e,i)=>{const ax=b.x+b.w*(0.55+0.2*Math.sin(T2+i*2.1))-0.17,ay=b.y+b.h*(0.62+0.12*Math.cos(T2*0.8+i*1.7))-0.17;ctx.drawImage(spr(e),ax,ay,0.34,0.34);});
+   const an=b.t==='agil'?['🐑','🐑','🐏']:['🐎','🐄','🐎'];
+   const pos=b.t==='agil'?[[0.62,0.55],[0.78,0.78],[0.5,0.82]]:[[0.6,0.6],[0.78,0.75],[0.48,0.8]];
+   an.forEach((e,i)=>{ctx.drawImage(spr(e),b.x+b.w*pos[i][0]-0.17,b.y+b.h*pos[i][1]-0.17,0.34,0.34);});
   }if(b.pri&&!b.done)ctx.drawImage(spr('⭐'),b.x+b.w-0.5,b.y,0.5,0.5);return;}
  const x=b.x,y=b.y,L=wallAt(x-1,y),R=wallAt(x+1,y),U=wallAt(x,y-1),D=wallAt(x,y+1);
  let tags=[];
@@ -110,8 +130,8 @@ drawBuilding=function(b){
  ctx.globalAlpha=b.done?1:0.5;
  for(const tg of tags){
   const im=img('s_'+b.t+'_'+tg);
-  if(im)ctx.drawImage(im,x-0.125,y-0.125,1.25,1.25);
-  else{ctx.fillStyle='#8a5a2a';ctx.fillRect(x+0.1,y+0.1,0.8,0.8);}
+  if(im)ctx.drawImage(im,x+0.5-SURW/2,y+0.95-SURH,SURW,SURH);
+  else{ctx.fillStyle='#8a8a90';ctx.fillRect(x+0.1,y+0.1,0.8,0.8);}
  }
  ctx.globalAlpha=1;
  if(b.team==='p'){ctx.fillStyle=TEAMCOL.p;ctx.fillRect(x+0.04,y+0.04,0.16,0.16);}

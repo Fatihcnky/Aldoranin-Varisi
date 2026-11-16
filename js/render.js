@@ -146,7 +146,7 @@ function draw(){
   else if(f.k==='poof'){ctx.globalAlpha=a;ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(f.x,f.y,(1-a)*1.2,0,6.3);ctx.fill();ctx.globalAlpha=1;}
  }
  // çit önizlemesi
- if(UI.wall&&UI.wsel){const im=img('s_duvar_h');ctx.globalAlpha=0.55;for(const k of UI.wsel){const x=k%MW,y=(k/MW)|0;ctx.fillStyle='#4caf50';ctx.fillRect(x+0.05,y+0.05,0.9,0.9);if(im)ctx.drawImage(im,x-0.125,y-0.125,1.25,1.25);}ctx.globalAlpha=1;}
+ if(UI.wall&&UI.wsel){const im=img('s_duvar_h');ctx.globalAlpha=0.55;for(const k of UI.wsel){const x=k%MW,y=(k/MW)|0;ctx.fillStyle='#4caf50';ctx.fillRect(x+0.05,y+0.05,0.9,0.9);if(im)ctx.drawImage(im,x+0.5-0.775,y+0.95-1.57,1.55,1.57);}ctx.globalAlpha=1;}
  // yerleştirme hayaleti
  const P=UI.place;
  if(P&&P.x!=null){

@@ -258,7 +258,7 @@ function onDay(){
  if(s===2&&sd===SL[2]-4){const w=winterNeed();log('❄ Kışa 4 gün kaldı! '+SL[3]+' günlük kış için yaklaşık '+w.wood+' odun ve '+w.food+' yiyecek gerek.');}
  // mutluluk, hanedan, kış
  happyDay();
- if(d>0&&d%YEARD===0)dynYear();
+ if(d>0&&d%DYT===0)dynYear();
  if(s===0&&sd===0)S.hardWinter=false;
  if(s===2&&last&&Math.random()<0.25){S.hardWinter=true;log('🌨 Yaşlılar sert bir kış geleceğini söylüyor: odun tüketimi artacak!');}
  // vergi & ticaret

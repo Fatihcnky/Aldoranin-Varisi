@@ -47,7 +47,7 @@ function updHint(){
   $('hintbtn').innerHTML=btn('✔ Onayla','confirm')+btn('✖ İptal','cancel');
  }else if(UI.road){
   hn.style.display='block';
-  if(UI.wall){const n=(UI.wsel||[]).length,c=BT.duvar.cost;$('hinttxt').textContent='Çit: parmağınla hattı çiz ('+n+' kare'+(n?' · '+Object.keys(c).map(k=>RI[k]+c[k]*n).join(' '):'')+'). Onaylayınca inşa edilir. Kapı için Yapılar\'dan Kapı seç.';$('hintbtn').innerHTML=btn('✔ İnşa et','wconfirm',null,!n)+btn('↩ Geri al','wundo',null,!n)+btn('✖ Çık','wexit');}
+  if(UI.wall){const n=(UI.wsel||[]).length,c=BT.duvar.cost;$('hinttxt').textContent='Sur: parmağınla hattı çiz ('+n+' kare'+(n?' · '+Object.keys(c).map(k=>RI[k]+c[k]*n).join(' '):'')+'). Onaylayınca inşa edilir. Kapı için Yapılar\'dan Sur Kapısı seç.';$('hintbtn').innerHTML=btn('✔ İnşa et','wconfirm',null,!n)+btn('↩ Geri al','wundo',null,!n)+btn('✖ Çık','wexit');}
   else{$('hinttxt').textContent='Yol: haritada parmağını sürükle (kare başı 1 odun)';$('hintbtn').innerHTML=btn('✖ Bitti','cancel');}
  }else hn.style.display='none';
 }
@@ -96,6 +96,7 @@ function pArmy(){
   const d=UT[t],b=bestTrainer(t),why=canTrain(t)||(b?'':BT[Object.keys(BT).find(k=>BT[k].train&&BT[k].train.includes(t))].n+' gerekli');
   h+='<div class="row">'+btn(d.g+' '+d.n,'train',t,!!why,b?b.id:0)+btn('×5','train5',t,!!why,b?b.id:0)+'<small>'+(why?'🔒 '+why:cstr(d.cost)+' · '+d.time+'sn')+'<br>❤'+d.hp+' ⚔'+d.atk+' 🛡'+d.arm+'</small></div>';
  });
+ h+=milPanel();
  return h;
 }
 function pTech(){
@@ -156,7 +157,9 @@ function pDyn(){
  h+=heroBox('ruler',r);
  h+=D.spouse?'<div style="margin-top:4px">💍 Eş: <b>'+D.spouse.name+'</b> ('+D.spouse.age+') — '+KINGS[D.spouse.from].n+'</div>':'<div style="margin-top:4px"><small>💍 Evli değilsin. Komşu hanedanlarla ilişkiyi artır, evlilik teklifi gelebilir ya da Diplomasi\'den teklif et.</small></div>';
  h+='<div style="margin-top:4px">👶 Varisler: '+(D.heirs.length?D.heirs.map(x=>x.name+' ('+x.age+', '+TRAITS[x.trait].n+')').join(' · '):'<small>yok</small>')+'</div>';
- D.heirs.filter(x=>x.age>=16).forEach(x=>{h+='<div class="row">'+(heroOf('heir:'+x.name)?btn('🏠 '+x.name+' saraya','unhero','heir:'+x.name):btn('⚔ '+x.name+' orduya','hero','heir:'+x.name,!mainTC()))+'<small>Varis komutan olarak savaşabilir.</small></div>'+heroBox('heir:'+x.name,x);});
+ D.heirs.filter(x=>x.age>=HEROAGE).forEach(x=>{h+='<div class="row">'+(heroOf('heir:'+x.name)?btn('🏠 '+x.name+' saraya','unhero','heir:'+x.name):btn('⚔ '+x.name+' orduya','hero','heir:'+x.name,!mainTC()))+'<small>Varis komutan olarak savaşabilir.</small></div>'+heroBox('heir:'+x.name,x);});
+ {const kid=D.heirs.filter(x=>x.age<HEROAGE+2).sort((a,b)=>b.age-a.age)[0];if(kid)h+='<div class="row">'+btn('🎓 Eğitim: '+kid.name+' (120💰, +2 yaş)','edu',null,(D.eduCool||0)>0||S.res.gold<120)+'<small>'+((D.eduCool||0)>0?'Bekleme: '+D.eduCool+' hanedan yılı':'Usta öğretmenler varisi hızla yetiştirir.')+'</small></div>';}
+ h+='<div><small>⏳ Hanedan hızı: 1 hanedan yılı = '+DYT+' gün (varisler ve hükümdar bu hızla yaşlanır). '+HEROAGE+' yaşında komutan olabilirler.</small></div>';
  if(D.crisis>0)h+='<div style="color:#ff8a80">⚠ Hanedan krizi sürüyor.</div>';
  const hp=Math.round(S.happy);
  h+='<h4>🙂 Halk mutluluğu: '+hp+' '+bar(hp/100)+'</h4><small>'+(hp>=65?'Göçmenler gelir, verim yüksek.':hp<20?'Halk isyana yakın!':'Verim: x'+happyMul().toFixed(2))+'</small>';
@@ -250,7 +253,7 @@ function act(a,v,w,el){
   case 'place':if(v==='duvar'){UI.wall=v;UI.road=true;UI.place=null;UI.tab=null;UI.wsel=[];UI.wstack=[];UI.wlx=null;updPanel(true);updHint();break;}UI.wall=null;UI.place={t:v,x:null,y:null};UI.road=false;UI.tab=null;updPanel(true);updHint();break;
   case 'confirm':doConfirm();break;
   case 'move':{const b=BM.get(+v);if(b&&b.done&&b.team==='p'&&b.t!=='tc'){UI.place={t:b.t,mv:b.id,x:b.x,y:b.y};UI.sel=null;UI.tab=null;updPanel(true);updHint();}break;}
-  case 'wconfirm':{let n=0,fail=0;for(const k of (UI.wsel||[])){const x=k%MW,y=(k/MW)|0;if(!canPlace('duvar',x,y)){fail++;continue;}if(!afford(BT.duvar.cost)){log('⛔ Kaynak yetersiz, '+(UI.wsel.length-n-fail)+' kare kaldı.');break;}if(placeBuilding('duvar',x,y))n++;}UI.wsel=[];UI.wstack=[];UI.road=false;UI.wall=null;log('🧱 '+n+' çit karesi inşaata başladı.');updHint();updPanel(true);break;}
+  case 'wconfirm':{let n=0,fail=0;for(const k of (UI.wsel||[])){const x=k%MW,y=(k/MW)|0;if(!canPlace('duvar',x,y)){fail++;continue;}if(!afford(BT.duvar.cost)){log('⛔ Kaynak yetersiz, '+(UI.wsel.length-n-fail)+' kare kaldı.');break;}if(placeBuilding('duvar',x,y))n++;}UI.wsel=[];UI.wstack=[];UI.road=false;UI.wall=null;log('🧱 '+n+' sur karesi inşaata başladı.');updHint();updPanel(true);break;}
   case 'wundo':{const b=(UI.wstack||[]).pop();if(b)UI.wsel=UI.wsel.filter(k=>!b.includes(k));else UI.wsel=[];updHint();break;}
   case 'wexit':UI.wsel=[];UI.wstack=[];UI.road=false;UI.wall=null;updHint();updPanel(true);break;
   case 'cancel':UI.place=null;UI.road=false;UI.wall=null;UI.wsel=[];updHint();break;
@@ -275,6 +278,9 @@ function act(a,v,w,el){
   case 'hero':summonHero(v);break;
   case 'unhero':dismissHero(v);break;
   case 'fest':holdFestival();break;
+  case 'callmil':callMilitia();updPanel(true);break;
+  case 'relmil':releaseMilitia();updPanel(true);break;
+  case 'edu':eduHeir();break;
   case 'marry':proposeMarriage(+v);break;
   case 'selarmy':UI.sel={kind:'u',ids:soldiers().map(u=>u.id)};UI.tab=null;updPanel(true);break;
   case 'retreat':{const tc=mainTC();if(tc)cmdMove(soldiers(),tc.x+tc.w/2,tc.y+tc.h+1,false);break;}
