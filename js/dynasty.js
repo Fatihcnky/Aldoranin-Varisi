@@ -34,7 +34,7 @@ function happyFactors(){
  const fd=S.res.food/Math.max(1,pop);
  f.push(['Yiyecek',fd>=8?10:fd>=3?4:fd>0.5?-4:-25]);
  if(seas()===3){f.push(['Isınma',S.res.wood>pop*2?3:-15]);f.push(['Kışlık giyim',(S.res.giyim||0)+(S.res.deri||0)*0.4>=pop*0.3?3:-6]);}
- if(S.bakeT&&S.t-S.bakeT<12)f.push(['Taze ekmek',4]);
+ if(S.founded){const n=foodVar();f.push(['Yemek çeşitliliği ('+n+' tür)',n>=5?5:n===4?3:n===3?1:n===2?0:-1]);if((S.varLow||0)>=3)f.push(['Tekdüze beslenme',-Math.min(8,S.varLow-2)]);}
  const ch=Math.min(2,countB('sapel',true)),tv=Math.min(2,countB('han',true));
  if(ch)f.push(['Şapel',8*ch]);
  if(tv)f.push(['Han',6*tv]);

@@ -129,7 +129,7 @@ function boot(){
  const start=(cont)=>{
   const go=()=>{
    clampCam();buildBar();updHint();drawMini(true);
-   if(!S.founded)showModal('🏰 Krallık Yolu','Sürgündeki kafilen yeni bir yurt arıyor. Haritada gezin (sürükle, iki parmakla yakınlaştır), uygun bir yer bul ve "Köyü Kur" düğmesine bas.\n\nGörev: köyünü büyüt, haydutlara karşı koy, komşu krallarla diplomasi yap ve krallığını ilan et.',[{t:'Başla'}]);
+   if(!S.founded)showModal('🏰 Aldora\'nın Mirası','Sürgündeki kafilen yeni bir yurt arıyor. Haritada gezin (sürükle, iki parmakla yakınlaştır), uygun bir yer bul ve "Köyü Kur" düğmesine bas.\n\nGörev: köyünü büyüt, haydutlara karşı koy, komşu krallarla diplomasi yap ve krallığını ilan et.',[{t:'Başla'}]);
   };
   requestAnimationFrame(frame);
   if(cont&&loadGame())go();else newGameSetup(go);

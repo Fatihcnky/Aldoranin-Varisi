@@ -3,7 +3,7 @@
 function newGame(seed){
  seed=seed||((Math.random()*1e9)|0);
  S={seed,t:0,speed:1,founded:false,age:0,rank:0,
-  res:{food:300,wood:400,stone:200,iron:0,gold:60,silah:0,deri:0,alet:0,zirh:0,giyim:0,keten:0},
+  res:{food:300,wood:400,stone:200,iron:0,gold:60,silah:0,deri:0,alet:0,zirh:0,giyim:0,keten:0,ekmek:0},
   jobs:{build:1,wood:3,forage:2},story:0,nid:1,units:[],blds:[],camps:[],
   techs:{},research:null,ageProg:null,stats:{camps:0,kills:0,raids:0,lost:0},
   kings:KINGS.map(k=>({rel:{bilge:10,savasci:-10,acgozlu:0,dost:25}[k.pers],str:20,pact:null,war:false,cool:0,lastComplaint:-99,lastWar:-99})),
@@ -153,7 +153,9 @@ function costText(c){return Object.keys(c).map(k=>RI[k]+c[k]).join(' ');}
 function econ(dt){
  if(!S.founded)return;
  const pop=popNow();
- S.res.food-=pop*0.025*dt;
+ const need=pop*0.025*dt,eb=Math.min(S.res.ekmek||0,need*0.5);
+ if(eb>0){S.res.ekmek-=eb;fvMark('ekmek');}
+ S.res.food-=Math.max(0,need-eb*1.1);
  if(S.res.food<=0){
   S.res.food=0;S.starve+=dt;
   if(S.starve>=15){

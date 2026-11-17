@@ -141,15 +141,16 @@ function workTick(u,dt){
  const j=u.job,s=seas();
  const hm=happyMul();
  if(j==='farm'){
-  const crop=b.crop||'bugday',m=hm*(b.lvl?1.3:1),bk=(S.bakeT&&S.t-S.bakeT<3)?1.2:1;
+  const crop=b.crop||'bugday',m=hm*(b.lvl?1.3:1),bk=1;
+  if(crop!=='keten')fvMark(crop==='sebze'?'sebze':'tahil');
   if(crop==='keten')addRes('keten',0.075*dt*FLAX[s]*fxm('farm')*(S.drought>0?0.5:1)*m);
   else if(crop==='sebze')addRes('food',0.075*dt*VEG[s]*fxm('farm')*(S.drought>0?0.6:1)*m);
   else addRes('food',0.10*dt*FARMS[s]*fxm('farm')*(S.drought>0?0.5:1)*m*bk);
  }
- else if(j==='fish'){const nd=Math.max(1,countB('iskele',true));addRes('food',0.085*dt*FISH[s]*fxm('fish')*hm*(b.lvl?1.3:1)/(1+0.2*(nd-1)));}
- else if(j==='bake'){S.bakeT=S.t;S.res.wood=Math.max(0,S.res.wood-0.012*dt);}
+ else if(j==='fish'){fvMark('balik');const nd=Math.max(1,countB('iskele',true));addRes('food',0.085*dt*FISH[s]*fxm('fish')*hm*(b.lvl?1.3:1)/(1+0.2*(nd-1)));}
+ else if(j==='bake'){u.tm=(u.tm||0)+dt;S.res.wood=Math.max(0,S.res.wood-0.012*dt);if(u.tm>=10){const R=S.res;if(R.food>=80&&(R.ekmek||0)<popNow()*4+20){R.food-=3;addRes('ekmek',3);u.tm=0;}else u.tm=8;}}
  else if(j==='tailor'){u.tm+=dt;if(u.tm>=10){const R=S.res;if(R.keten>=3){R.keten-=3;addRes('giyim',1);u.tm=0;}else if(R.deri>=2){R.deri-=2;addRes('giyim',1);u.tm=0;}else u.tm=8;}}
- else if(j==='herd'){addRes('food',0.065*dt*HERDS[s]*hm*(b.lvl?1.3:1));addRes('deri',0.012*dt*hm);}
+ else if(j==='herd'){fvMark('et');addRes('food',0.065*dt*HERDS[s]*hm*(b.lvl?1.3:1));addRes('deri',0.012*dt*hm);}
  else if(j==='trade')addRes('gold',0.07*dt*fxm('trade')*(1+0.25*pactCount())*hm);
  else if(j==='smith'){u.tm+=dt;if(u.tm>=12){
   const R=S.res,mk=b.mk||'auto';
@@ -203,7 +204,7 @@ function updVillager(u,dt){
    if(u.carry>=9.99||RA[i]<=0){if(u.carry>0.5)toDrop(u);else u.st='idle';}
    break;}
   case 'toDrop':
-   if(walkTo(u,dt)){const rk=u.job==='hunt'?'food':(resOf(u)&&resOf(u)[1]);if(u.carry>0&&rk){const db=BM.get(u.dbid);if(db&&(db.t==='oduncu'||db.t==='maden'))db.buf=(db.buf||0)+u.carry;addRes(rk,u.carry);if(S.res.alet>0)S.res.alet=Math.max(0,S.res.alet-0.12);}if(u.job==='hunt'&&u.carry>0)addRes('deri',1);if(u.job==='hunt')S.stats.hunted=(S.stats.hunted||0)+1;u.carry=0;u.st='idle';}
+   if(walkTo(u,dt)){const rk=u.job==='hunt'?'food':(resOf(u)&&resOf(u)[1]);if(u.carry>0&&rk){const db=BM.get(u.dbid);if(db&&(db.t==='oduncu'||db.t==='maden'))db.buf=(db.buf||0)+u.carry;addRes(rk,u.carry);if(S.res.alet>0)S.res.alet=Math.max(0,S.res.alet-0.12);}if(u.job==='hunt'&&u.carry>0){addRes('deri',1);fvMark('av');}if(u.job==='forage'&&u.carry>0)fvMark('meyve');if(u.job==='hunt')S.stats.hunted=(S.stats.hunted||0)+1;u.carry=0;u.st='idle';}
    break;
   case 'toWork':if(walkTo(u,dt))u.st='work';break;
   case 'hdepo':if(walkTo(u,dt)){haulLoad(u);}break;

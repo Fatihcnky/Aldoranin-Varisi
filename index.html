@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>Krallık Yolu</title>
+<title>Aldora'nın Mirası</title>
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 html,body{margin:0;height:100%;overflow:hidden;background:#111;font-family:system-ui,Segoe UI,Roboto,sans-serif;color:#fff;touch-action:none}
@@ -48,6 +48,7 @@ button.dis{opacity:.4}
 
 #top{padding:3px 6px;background:linear-gradient(#2a1e12ee,#1a120aee);border-bottom:2px solid #8a6a3a;font-size:13px}
 #top .row1,#top .row2{display:flex;flex-wrap:wrap;gap:4px;margin:2px 0}
+.ri{height:1.15em;width:1.15em;vertical-align:-0.22em;image-rendering:pixelated}
 .chip{position:relative;display:inline-flex;align-items:center;gap:3px;background:#0006;border:1px solid #6b5230;border-radius:12px;padding:1px 8px;font-size:13px;overflow:hidden;white-space:nowrap}
 .chip b{font-weight:600}
 .chip i{position:absolute;left:0;bottom:0;height:3px;background:#7ac14a}
@@ -104,7 +105,7 @@ button.tb span{font-size:19px;line-height:1.1}button.tb.on{background:linear-gra
 <div id="panel"></div>
 <div id="bar"></div>
 <div id="setup"><div class="box"><h3>👑 Hükümdarını Oluştur</h3><label>Adın</label><input id="sName" maxlength="14" autocomplete="off"><label>Hane (soyadı)</label><input id="sHouse" maxlength="16" autocomplete="off"><label>Cinsiyet</label><div class="gl tg"></div><label>Özelliğin</label><div class="tl tg"></div><button data-a="setupgo" style="width:100%;margin-top:10px;font-size:16px">⚔ Yolculuğa Başla</button></div></div>
-<div id="menu"><div class="mbox"><h1>🏰 Krallık Yolu</h1><p class="sub">Aldora'nın Son Varisi</p><div id="menuBtns"></div><small id="menuFoot"></small></div></div>
+<div id="menu"><div class="mbox"><h1><img src="img/logo.png" style="width:150px;border-radius:18px;display:block;margin:0 auto 6px"></h1><p class="sub">Aldora'nın Son Varisi</p><div id="menuBtns"></div><small id="menuFoot"></small></div></div>
 <div id="diffscr"><div class="box"><h3>⚔ Zorluk Seç</h3><p class="sub">Oynayacağın deneyimi seç. Bilgiler oyunun gerçek ayarlarıdır.</p><div id="diffList"></div><button class="mb2" data-a="diffback">← Geri</button></div></div>
 <div id="modal"><div class="box"><h3 id="mt"></h3><p id="mb"></p><div id="mbtn"></div></div></div>
 <script src="js/data.js"></script>
@@ -125,6 +126,7 @@ button.tb span{font-size:19px;line-height:1.1}button.tb.on{background:linear-gra
 <script src="js/setup.js"></script>
 <script src="js/menu.js"></script>
 <script src="js/militia.js"></script>
+<script src="js/food.js"></script>
 <script src="js/testmode.js"></script>
 <script src="js/input.js"></script>
 </body>

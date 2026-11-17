@@ -1,4 +1,4 @@
-# Krallık Yolu
+# Aldora'nın Mirası
 
 Köy kurma ve hayatta kalma stratejisi. Köyünü kur, halkı görevlendir, mevsimlere ve haydut baskınlarına hazırlan, komşu krallarla diplomasi yap, çağ atla ve krallığını ilan et.
 

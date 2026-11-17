@@ -19,11 +19,11 @@ const SEASONS=['İlkbahar','Yaz','Sonbahar','Kış'];
 const AGES=['Taş Çağı','Bronz Çağı','Demir Çağı','Orta Çağ','Barut Çağı'];
 const RANKS=['Köy','Kale','Şehir','Lordluk','Krallık'];
 const TITLES=['Köy Muhtarı','Kale Beyi','Şehir Başkanı','Lord','Kral'];
-const RES=['food','wood','stone','iron','gold','deri','keten','giyim','silah','alet','zirh'];
-const NOCAP={silah:1,deri:1,alet:1,zirh:1,giyim:1,keten:1};
-const HIDE0={silah:1,deri:1,alet:1,zirh:1,giyim:1,keten:1}; // 0 iken HUD'da gizlenir
-const RN={food:'Yiyecek',wood:'Odun',stone:'Taş',iron:'Demir',gold:'Altın',silah:'Silah',deri:'Deri',alet:'Alet',zirh:'Zırh',giyim:'Giyim',keten:'Keten'};
-const RI={food:'🍖',wood:'🌲',stone:'🧱',iron:'🔩',gold:'💰',silah:'🗡',deri:'🐄',alet:'🔨',zirh:'🛡',giyim:'🧥',keten:'🌿'};
+const RES=['food','ekmek','wood','stone','iron','gold','deri','keten','giyim','silah','alet','zirh'];
+const NOCAP={silah:1,deri:1,alet:1,zirh:1,giyim:1,keten:1,ekmek:1};
+const HIDE0={ekmek:1,silah:1,deri:1,alet:1,zirh:1,giyim:1,keten:1}; // 0 iken HUD'da gizlenir
+const RN={food:'Yiyecek',wood:'Odun',stone:'Taş',iron:'Demir',gold:'Altın',silah:'Silah',deri:'Deri',alet:'Alet',zirh:'Zırh',giyim:'Giyim',keten:'Keten',ekmek:'Ekmek'};
+const RI={food:'🍖',wood:'🌲',stone:'🧱',iron:'🔩',gold:'💰',silah:'🗡',deri:'<img class="ri" src="img/i_deri.png" alt="">',ekmek:'🥖',alet:'🔨',zirh:'🛡',giyim:'🧥',keten:'🌿'};
 
 const JOBS=[
  {id:'build',n:'İnşaatçı',ic:'🔨',d:'Yeni binaları inşa eder.'},
@@ -36,7 +36,7 @@ const JOBS=[
  {id:'herd',n:'Çoban',ic:'🐑',bt:'agil',d:'Ağılda hayvan bakar (ağıl başına 3). Yiyecek ve deri verir.'},
  {id:'fish',n:'Balıkçı',ic:'🎣',bt:'iskele',d:'İskelede balık tutar (iskele başına 3). Kışın azalır, çok iskele birbirinin balığını azaltır.'},
  {id:'tailor',n:'Terzi',ic:'🧵',bt:'terzi',d:'Deriden veya keten bitkisinden giyim dikiş. Kışlık giyim mutluluğu korur.'},
- {id:'bake',n:'Fırıncı',ic:'🥖',bt:'firin',d:'Fırında ekmek pişirir: çiftliklerin buğday verimi +%20, mutluluk +4. Odun yakar.'},
+ {id:'bake',n:'Fırıncı',ic:'🥖',bt:'firin',d:'Yiyecekten ekmek pişirir (3 yiyecek → 3 ekmek, odun yakar). Ekmek yemek çeşitliliğini artırır.'},
  {id:'smith',n:'Silahçı',ic:'⚒',bt:'demirci',d:'Alet (demir+odun), zırh (demir+deri) ve silah (demir+odun) üretir. Aletler toplama hızını, zırh kılıçlı/şövalye eğitimini destekler.'},
  {id:'fire',n:'İtfaiyeci',ic:'🚒',bt:'itfaiye',d:'Yangınları söndürür.'},
  {id:'doc',n:'Şifacı',ic:'💊',bt:'hastane',d:'Yaralıları iyileştirir, salgını azaltır.'},
@@ -66,7 +66,7 @@ const BT={
  maden:{n:'Madenci Kulübesi',ic:'⛏',w:2,h:2,hp:180,age:0,cost:{wood:70,stone:30},time:14,col:'#666',drop:['stone','iron','gold'],d:'Taş ocağı veya maden yanına kur: taş, demir ve altın buraya bırakılır.'},
  iskele:{n:'Balıkçı İskelesi',ic:'🎣',w:2,h:2,hp:140,age:0,cost:{wood:80},time:14,shore:1,col:'#3a6a8a',d:'SADECE su kenarına kurulur. 3 balıkçı. Kışın verim düşer; aynı gölde çok iskele kurarsan balık azalır.'},
  terzi:{n:'Terzi Dükkânı',ic:'🧵',w:2,h:2,hp:160,age:1,cost:{wood:90,stone:20,gold:20},time:16,col:'#8a5a7a',d:'2 terzi: 2 deriden veya 3 ketenden 1 giyim diker. Çiftlikte keten ekebilir, ağılda deri elde edersin.'},
- firin:{n:'Fırın',ic:'🥖',w:2,h:2,hp:200,age:1,cost:{wood:80,stone:50},time:18,col:'#a0522d',d:'2 fırıncı: çiftliklerin buğday verimi +%20, mutluluk +4. Her fırıncı odun yakar.'},
+ firin:{n:'Fırın',ic:'🥖',w:2,h:2,hp:200,age:1,cost:{wood:80,stone:50},time:18,col:'#a0522d',d:'2 fırıncı: yiyeceği ekmeğe çevirir (3 yiyecek → 3 ekmek, odun yakar). Ekmek halk yiyeceğinin bir kısmını karşılar ve yemek çeşitliliğini artırır.'},
  avci:{n:'Avcı Kulübesi',ic:'🦌',w:2,h:2,hp:160,age:0,cost:{wood:60},time:12,col:'#7a5a3a',drop:1,d:'2 avcı: geyik ve yaban domuzu avlar (ava dikkat: kurtlar).'},
  sapel:{n:'Şapel',ic:'⛪',w:3,h:3,hp:300,age:1,cost:{wood:120,stone:120},time:26,col:'#ddd',d:'Halkın mutluluğunu artırır (+8, en çok 2 adet).'},
  han:{n:'Han / Meyhane',ic:'🍺',w:3,h:3,hp:240,age:1,cost:{wood:140,stone:40,gold:20},time:22,col:'#8a5a2a',d:'Mutluluk +6 (en çok 2). Ozan ve gezginler uğrar.'},

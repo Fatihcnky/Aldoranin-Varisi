@@ -143,7 +143,7 @@ const _drawBuildingOld=drawBuilding;
 const AN={};['sheep','lamb','ram','cow','horse'].forEach(n=>{const i=new Image();i.src='img/an_'+n+'.png';AN[n]=i;});
 const PR={};['barrel','crate','sacks','cart','well','stall','target','rack','anvil','logs','banner'].forEach(n=>{const i=new Image();i.src='img/p_'+n+'.png';PR[n]=i;});
 const PROPS={depo:[['barrel',0.1,0.98],['crate',0.24,1.0],['sacks',0.9,0.98],['cart',0.55,1.13]],pazar:[['crate',0.9,0.98],['sacks',0.12,0.98]],tc:[['well',1.08,0.98],['barrel',-0.05,0.95]],
- kisla:[['target',0.95,1.02],['rack',1.1,0.9],['banner',0.05,0.6]],okcu:[['target',0.15,1.02],['target',0.85,1.02]],demirci:[['anvil',0.12,1.0],['barrel',0.88,0.98]],oduncu:[['logs',0.85,1.0]],maden:[['cart',0.9,1.08],['crate',0.1,1.0]],
+ kisla:[],okcu:[['target',0.15,1.02],['target',0.85,1.02]],demirci:[['anvil',0.12,1.0],['barrel',0.88,0.98]],oduncu:[['logs',0.85,1.0]],maden:[['cart',0.9,1.08],['crate',0.1,1.0]],
  kale:[['banner',0.06,0.5],['banner',0.94,0.5]],tkule:[['banner',0.5,0.1]],saray:[['banner',0.05,0.6],['banner',0.95,0.6]],ciftlik:[['sacks',0.9,1.0],['barrel',0.08,1.0]],han:[['barrel',0.9,1.0],['barrel',1.0,0.9]],sapel:[['banner',0.95,0.7]],avci:[['rack',0.9,1.0]]};
 function drawProp(n,cx,by,k){const im=PR[n];if(!im||!im.naturalWidth)return;const w=im.naturalWidth*k,h=im.naturalHeight*k;ctx.save();ctx.imageSmoothingEnabled=false;ctx.fillStyle='#0002';ctx.beginPath();ctx.ellipse(cx+0.03,by-0.02,w*0.45,0.06,0,0,6.3);ctx.fill();ctx.drawImage(im,cx-w/2,by-h,w,h);ctx.restore();}
 const HOUSE_AG=new Image();HOUSE_AG.src='img/s_agilhouse.png';
@@ -175,10 +175,7 @@ drawBuilding=function(b){
  if(b.t!=='duvar'&&b.t!=='kapi'){_drawBuildingOld(b);
   if(b.done&&b.team==='p'&&PROPS[b.t])PROPS[b.t].forEach(([n,fx,fy])=>drawProp(n,b.x+b.w*fx,b.y+b.h*fy,1/26));
   if(b.lvl&&b.team==='p')ctx.drawImage(spr('⭐'),b.x+b.w-(b.w>=2?0.5:0.4),b.y+(b.w>=2?0.5:0.05),0.4,0.4);
-  if(b.t==='ahir'&&b.done&&b.team==='p'){
-   const pos=[[0.3,1.04,'horse',0],[0.8,1.07,'horse',1]];
-   pos.forEach(([px,py,nm,fl])=>drawAn(nm,b.x+b.w*px,b.y+b.h*py,fl,1/30));
-  }if(b.pri&&!b.done)ctx.drawImage(spr('⭐'),b.x+b.w-0.5,b.y,0.5,0.5);return;}
+  if(b.pri&&!b.done)ctx.drawImage(spr('⭐'),b.x+b.w-0.5,b.y,0.5,0.5);return;}
  const x=b.x,y=b.y,L=wallAt(x-1,y),R=wallAt(x+1,y),U=wallAt(x,y-1),D=wallAt(x,y+1);
  let tags=[];
  if(L||R)tags.push('h');

@@ -199,7 +199,7 @@ function pSel(){
  }
  if(b.team==='p'&&b.done&&b.t==='ciftlik'){const cr=b.crop||'bugday';
   h+='<div class="row"><b>Ekin:</b>'+[['bugday','🌾 Buğday'],['sebze','🥕 Sebze'],['keten','🌿 Keten']].map(o=>'<button data-a="crop" data-v="'+b.id+'" data-w="'+o[0]+'"'+(cr===o[0]?' style="background:#6a4e22;border-color:#ffd070"':'')+'>'+o[1]+'</button>').join('')+'</div><small>🌾 Buğday: en çok yiyecek (yaz/sonbahar), kışın durur. 🥕 Sebze: daha az ama kışın da verir. 🌿 Keten: yiyecek yerine terzi için kumaşlık lif.</small>';}
- if(b.team==='p'&&b.done&&b.t==='terzi')h+='<div>🧥 Giyim: <b>'+Math.floor(S.res.giyim||0)+'</b> · 🐄 Deri: '+Math.floor(S.res.deri||0)+' · 🌿 Keten: '+Math.floor(S.res.keten||0)+'</div>';
+ if(b.team==='p'&&b.done&&b.t==='terzi')h+='<div>🧥 Giyim: <b>'+Math.floor(S.res.giyim||0)+'</b> · '+RI.deri+' Deri: '+Math.floor(S.res.deri||0)+' · 🌿 Keten: '+Math.floor(S.res.keten||0)+'</div>';
  if(b.team==='p'&&b.done&&SLOTS[b.t]&&b.t!=='oduncu'&&b.t!=='maden'){const jo=JOBS.find(j=>j.bt===b.t);if(jo){const n=S.units.filter(u=>u.wb===b.id&&u.job===jo.id&&!u.dead).length;h+='<div>👷 Çalışan: <b>'+n+'/'+SLOTS[b.t]+'</b> ('+jo.n+')</div>';}}
  if(b.team==='p'&&b.done&&b.t==='demirci'){
   const mk=b.mk||'auto',opts=[['auto','⚙ Otomatik'],['alet','🔨 Alet'],['silah','🗡 Silah'],['zirh','🛡 Zırh'],['off','⏸ Durdur']];
