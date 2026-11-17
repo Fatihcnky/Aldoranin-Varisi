@@ -24,3 +24,4 @@ Bina, birim, ağaç ve zemin görselleri Kenney'nin "RTS Pack: Medieval" paketin
 Köylüler ve askerler "Minifolks" (Villagers + Humans) sprite paketiyle çizilir (`img/mf/`). Paketin lisans koşullarını yayınlamadan önce kontrol edin.
 
 Binalar, ağaçlar ve kayalar Kay Lousberg'in "KayKit Medieval Hexagon Pack" (CC0) 3D modellerinden 2D sprite olarak üretilmiştir (www.kaylousberg.com).
+Trigger Actions build
