@@ -193,3 +193,15 @@ const STORY=[
  {ch:'Final — Taç',t:'Krallığını ilan et: "Krallık" ünvanına yüksel.',ok:()=>S.rank>=4,m:'Taç giydin ama Maldric hâlâ ayakta...'},
  {ch:'Son — Kara Kale',t:'Haritanın uzak köşesindeki Maldric\'in Kara Kale\'sini yık. Güçlü bir ordu ve toplar getir!',ok:()=>S.sf&&S.sf.maldricDead,m:'Maldric düştü, taç sonunda gerçek sahibinde. Aldora yeniden doğdu!'}
 ];
+
+// Food config - ayrı kategorilerle
+const FOOD_CONFIG = {
+    main: [
+        { id: "bread", name: "Bread", icon: "🍞", category: "main", count: 0 },
+        { id: "steak", name: "Steak", icon: "🥩", category: "main", count: 0 }
+    ],
+    supplementary: [
+        { id: "carrot", name: "Carrot", icon: "🥕", category: "supplementary", count: 0 },
+        { id: "fish", name: "Fish", icon: "🐟", category: "supplementary", count: 0 }
+    ]
+};

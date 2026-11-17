@@ -92,6 +92,13 @@ button.tb span{font-size:19px;line-height:1.1}button.tb.on{background:linear-gra
 </style>
 </head>
 <body>
+<!-- Ana Menü Butonları -->
+<div id="game-menu" style="position:absolute;top:10px;left:10px;z-index:50;display:flex;gap:8px;flex-wrap:wrap;">
+    <button class="button" onclick="openHelpPopup()">ℹ️ How to Play</button>
+    <button class="button" onclick="openSaveMenu()">💾 Kaydet/Yükle</button>
+    <button class="button small" onclick="quickSave()">⏺ Quick Save</button>
+    <button class="button" onclick="openResearchMenu()">🔬 Teknoloji</button>
+</div>
 <canvas id="c"></canvas>
 <div id="top"></div>
 <canvas id="mm" width="120" height="120"></canvas>
@@ -129,5 +136,103 @@ button.tb span{font-size:19px;line-height:1.1}button.tb.on{background:linear-gra
 <script src="js/food.js"></script>
 <script src="js/testmode.js"></script>
 <script src="js/input.js"></script>
+<script src="js/saveSystem.js"></script>
+<script src="js/buildingSystem.js"></script>
+<script src="js/combatSystem.js"></script>
+<script src="js/npcSystem.js"></script>
+<script src="js/gameSystem.js"></script>
+<script src="js/technologySystem.js"></script>
+<script>
+// How to Play popup
+let helpPopup = null;
+function openHelpPopup() {
+    if (helpPopup) { helpPopup.parentNode.removeChild(helpPopup); helpPopup = null; return; }
+    helpPopup = document.createElement("div");
+    helpPopup.id = "help-popup";
+    helpPopup.className = "modal-backdrop";
+    helpPopup.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.8);display:flex;align-items:center;justify-content:center;z-index:1000;";
+    const popupContent = document.createElement("div");
+    popupContent.className = "modal-box";
+    popupContent.style.cssText = "width:320px;max-height:450px;background:#1a2228;border:2px solid #457b9d;border-radius:8px;overflow:auto;";
+    popupContent.innerHTML = `
+        <div class="modal-header" style="padding:10px 15px;border-bottom:1px solid #457b9d;">
+            <h3 style="margin:0;color:#e9ecef;">🎮 How to Play</h3>
+            <span class="close-x" onclick="closeHelpPopup()" style="cursor:pointer;float:right;color:#aaa;">×</span>
+        </div>
+        <div class="modal-body" style="padding:15px;">
+            <p><strong>🏗️ Bina Oluştur:</strong> Tıklayarak erişilebilen alanda "Build" butonuna basın</p>
+            <p><strong>👥 Köylü Ata:</strong> Kaynakları tıklayıp "Assign Peasant" seçin</p>
+            <p><strong>📦 Kaynak Yönetimi:</strong> Depo bınasını inşa ederek kapasitenizi artırın</p>
+            <p><strong>🔬 Teknoloji Araştır:</strong> Menüden "Technology" sekmesine gidin</p>
+            <p><strong>⏰ Sezon Döngüsü:</strong> Her 4. günde değişir: Yaz → Sonbahar → Kış → Bahar</p>
+            <p><strong>⚔️ Savaş Hazırlığı:</strong> "Defense Tower" bina yapın</p>
+            <p><strong>💾 Oyunu Kaydet:</strong> Menüden "Save/Load" ile 3 slotta kaydedebilirsiniz</p>
+        </div>
+    `;
+    popupContent.onclick = function(e) { if (e.target === popupContent) closeHelpPopup(); };
+    helpPopup.appendChild(popupContent);
+    document.body.appendChild(helpPopup);
+}
+function closeHelpPopup() { if (helpPopup) { helpPopup.parentNode.removeChild(helpPopup); helpPopup = null; } }
+
+// Quick save
+function quickSave() { if(typeof saveToSlot === 'function') { saveToSlot(1); displayMessage("Hızlı kaydetildi! (Slot 1)", "success"); } else { displayMessage("Sistem yükleniyor...", "info"); } }
+
+// Save menu
+let saveMenuVisible = false;
+function openSaveMenu() {
+    const existingMenu = document.getElementById("save-menu");
+    if (existingMenu) { existingMenu.parentNode.removeChild(existingMenu); saveMenuVisible = false; return; }
+    saveMenuVisible = true;
+    const saveMenu = document.createElement("div");
+    saveMenu.id = "save-menu";
+    saveMenu.style.cssText = "position:absolute;top:50px;left:10px;background:rgba(0,0,0,0.85);border:2px solid #457b9d;border-radius:8px;padding:15px;z-index:200;min-width:220px;";
+    let html = "<h4>💾 Save Slots (3)</h4>";
+    for (let i = 1; i <= 3; i++) {
+        const saved = localStorage.getItem("aldora_save_" + i);
+        const hasSave = saved !== null;
+        html += `<div style="margin:8px 0;padding:5px;border-top:1px solid #333;border-bottom:1px solid #333;"><strong>Slot ${i}</strong> ${hasSave ? "(Kaydedilmiş)" : "(Boş)"}<br><button class="button tiny" onclick="loadFromSlot(${i})">Yükle</button><button class="button tiny" style="margin-left:5px;" onclick="saveToSlot(${i})">Kaydet</button></div>`;
+    }
+    html += `<div style="margin-top:10px;padding-top:10px;border-top:1px solid #333;"><button class="button" onclick="closeSaveMenu()">Kapat</button></div>`;
+    saveMenu.innerHTML = html;
+    document.body.appendChild(saveMenu);
+}
+function closeSaveMenu() { if (saveMenuVisible && document.getElementById("save-menu")) { document.getElementById("save-menu").parentNode.removeChild(document.getElementById("save-menu")); } saveMenuVisible = false; }
+
+// Research menu
+function openResearchMenu() {
+    const panel = document.getElementById("panel");
+    if (!panel) return;
+    panel.style.display = "block";
+    panel.innerHTML = "<h4>🔬 Teknoloji Araştırma</h4><div id=\"tech-list\"></div>";
+    if(typeof displayAvailableTechnologies === 'function') displayAvailableTechnologies();
+}
+
+// Food list render
+function renderFoodListUI() {
+    const container = document.getElementById("food-list");
+    if (!container || typeof FOOD_CONFIG === 'undefined') return;
+    let html = "<div class='food-category'>🍛 Primary Foods</div>";
+    FOOD_CONFIG.main.forEach(food => {
+        html += `<div class="food-item" style="display:flex;justify-content:space-between;"><span>${food.icon} ${food.name}</span><span>${food.count > 0 ? food.count : "Stock"}</span></div>`;
+    });
+    html += "<div class='divider-small'></div>";
+    html += "<div class='food-category'>🥕 Supplementary</div>";
+    FOOD_CONFIG.supplementary.forEach(food => {
+        html += `<div class="food-item" style="display:flex;justify-content:space-between;"><span>${food.icon} ${food.name}</span><span>${food.count > 0 ? food.count : "Stock"}</span></div>`;
+    });
+    container.innerHTML = html;
+}
+
+// Initialize on load
+document.addEventListener("DOMContentLoaded", function() {
+    // Add food list container
+    const foodDiv = document.createElement("div");
+    foodDiv.id = "food-list";
+    foodDiv.style.cssText = "position:absolute;top:60px;left:10px;z-index:40;max-width:200px;";
+    document.body.appendChild(foodDiv);
+    if(typeof renderFoodListUI === 'function') setTimeout(renderFoodListUI, 500);
+});
+</script>
 </body>
 </html>

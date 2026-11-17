@@ -39,3 +39,21 @@ function checkTechRequirements(tech) {
     }
     return true;
 }
+
+// Fishing Tech
+TECHNOLOGY_TYPES.fishing = {
+    name: "Balıkçılık",
+    cost: { gold: 40 },
+    requirements: { level: 2 },
+    unlocks: ["food_variety:fish"],
+    effects: { food_variety: 1, fish_generation: 2, description: "Balık üretimi açar" }
+};
+
+// Bakery Tech
+TECHNOLOGY_TYPES.bakery = {
+    name: "Fırın ve Yemek Hazırlama",
+    cost: { wood: 25, gold: 35 },
+    requirements: { level: 2, unlockedTechnologies: ["fishing"] },
+    unlocks: ["food_variety:bread"],
+    effects: { food_variety: 2, food_generation: 10, description: "Ekmeğ ve çeşitli yiyecek üretimi" }
+};
