@@ -3,7 +3,7 @@
 function newGame(seed){
  seed=seed||((Math.random()*1e9)|0);
  S={seed,t:0,speed:1,founded:false,age:0,rank:0,
-  res:{food:300,wood:400,stone:200,iron:0,gold:60,silah:0,deri:0,alet:0,zirh:0},
+  res:{food:300,wood:400,stone:200,iron:0,gold:60,silah:0,deri:0,alet:0,zirh:0,giyim:0,keten:0},
   jobs:{build:1,wood:3,forage:2},story:0,nid:1,units:[],blds:[],camps:[],
   techs:{},research:null,ageProg:null,stats:{camps:0,kills:0,raids:0,lost:0},
   kings:KINGS.map(k=>({rel:{bilge:10,savasci:-10,acgozlu:0,dost:25}[k.pers],str:20,pact:null,war:false,cool:0,lastComplaint:-99,lastWar:-99})),
@@ -153,7 +153,7 @@ function costText(c){return Object.keys(c).map(k=>RI[k]+c[k]).join(' ');}
 function econ(dt){
  if(!S.founded)return;
  const pop=popNow();
- S.res.food-=pop*0.022*dt;
+ S.res.food-=pop*0.025*dt;
  if(S.res.food<=0){
   S.res.food=0;S.starve+=dt;
   if(S.starve>=15){
@@ -219,6 +219,7 @@ function canPlace(t,x,y){
   if(T[i]!==0||FOG[i]===0)return false;
   if(OCC[i]!==0&&!(t==='kapi'&&BM.get(OCC[i])&&BM.get(OCC[i]).t==='duvar'&&BM.get(OCC[i]).team==='p'))return false;
  }
+ if(d.shore){let wet=false;for(let yy=y-1;yy<=y+d.h&&!wet;yy++)for(let xx=x-1;xx<=x+d.w;xx++)if(inMap(xx,yy)&&T[yy*MW+xx]===1){wet=true;break;}if(!wet)return false;}
  // köylüleri/yolu kapalı bir boşluğa hapsetmesin
  if(S.founded&&!d.decor&&t!=='duvar'&&t!=='kapi'){
   const inF=(px,py)=>px>=x&&px<x+d.w&&py>=y&&py<y+d.h;
@@ -308,7 +309,15 @@ function cmdMove(units,x,y,attack){
   const ox=(k%4)-1.5,oy=((k/4)|0)-1;k++;
   let gx=Math.floor(x+ox*0.9),gy=Math.floor(y+oy*0.9);
   if(!walk(gx,gy)){gx=Math.floor(x);gy=Math.floor(y);}
-  u.st=attack?'amove':(S.founded&&u.t==='koylu'?'cmd':'move');u.gx=gx;u.gy=gy;u.path=null;u.tg=0;u.forced=0;u.wait=0;
+  u.cmdRes=0;
+  if(S.founded&&u.t==='koylu'&&u.job&&JOBRES[u.job]&&units.length<=4){ // ağaç/maden üstüne bırakılırsa oradan topla, sonra işine dön
+   const rt=JOBRES[u.job][0],cx=Math.floor(x),cy=Math.floor(y);let found=-1;
+   for(let dy=-1;dy<=1&&found<0;dy++)for(let dx=-1;dx<=1;dx++){const i=(cy+dy)*MW+cx+dx;if(inMap(cx+dx,cy+dy)&&T[i]===rt&&RA[i]>0&&UNRE[i]<=S.t){found=i;break;}}
+   if(found>=0){const fx=found%MW,fy=(found/MW)|0;let ok=false;
+    for(const[ax,ay]of[[0,1],[0,-1],[1,0],[-1,0],[1,1],[-1,1],[1,-1],[-1,-1]])if(walk(fx+ax,fy+ay)){gx=fx+ax;gy=fy+ay;ok=true;break;}
+    if(ok)u.cmdRes=found;}
+  }
+  u.st=(S.founded&&u.t==='koylu')?'cmd':(attack?'amove':'move');u.gx=gx;u.gy=gy;u.path=null;u.tg=0;u.forced=0;u.wait=0;
  }
 }
 function cmdAttack(units,e){for(const u of units){u.tg=e.id;u.forced=1;u.st='amove';u.gx=Math.floor(e.x);u.gy=Math.floor(e.y);u.path=null;}}

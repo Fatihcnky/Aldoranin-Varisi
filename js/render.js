@@ -66,7 +66,7 @@ function drawTile(x,y,s){
  ctx.fillStyle=t===2?TREEC[s]:t===3?'#8c8f94':t===4?'#6f5b52':t===5?'#7d7568':'#2e7d32';
  ctx.beginPath();ctx.moveTo(x+0.5,y+0.1);ctx.lineTo(x+0.9,y+0.9);ctx.lineTo(x+0.1,y+0.9);ctx.fill();
 }
-const SMOKE={ev:1,tc:1,han:1,demirci:1,kisla:1};
+const SMOKE={ev:1,tc:1,han:1,demirci:1,kisla:1,firin:1};
 const LIGHT={ev:1,tc:1,han:1,kule:1,tkule:1,sapel:1,kale:1};
 function drawBuilding(b){
  const d=BT[b.t];
@@ -76,10 +76,9 @@ function drawBuilding(b){
   ctx.globalAlpha=b.done?1:0.5;
   ctx.drawImage(bi,b.x+0.02,b.y+0.02,b.w-0.04,b.h-0.04);
   ctx.globalAlpha=1;
-  if(b.lvl&&b.team==='p')ctx.drawImage(spr('⭐'),b.x+b.w-0.5,b.y+b.h-0.5,0.5,0.5);
   if(b.team==='f'&&KINGS[b.kid]){ctx.fillStyle=KINGS[b.kid].col;ctx.fillRect(b.x+0.05,b.y+0.05,0.28,0.28);}
   if(b.team==='p'||b.team==='b'){ctx.fillStyle=b.team==='p'?TEAMCOL.p:TEAMCOL.b;ctx.fillRect(b.x+0.05,b.y+0.05,0.28,0.28);}
-  if(b.team==='p'&&b.w>=2&&d.ic&&b.t!=='ev')ctx.drawImage(spr(d.ic),b.x+b.w-0.55,b.y+0.02,0.5,0.5);
+  if(b.team==='p'&&b.w>=2&&d.ic&&b.t!=='ev')ctx.drawImage(spr(b.t==='ciftlik'?({sebze:'🥕',keten:'🌿'}[b.crop]||d.ic):d.ic),b.x+b.w-0.55,b.y+0.02,0.5,0.5);
  }else{
   ctx.fillStyle=d.col;ctx.globalAlpha=b.done?1:0.55;
   ctx.fillRect(b.x+0.06,b.y+0.06,b.w-0.12,b.h-0.12);

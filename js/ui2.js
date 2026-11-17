@@ -30,7 +30,7 @@ function questBox(){
 }
 function updHud(){
  let h='<div class="row1">';
- if(S.founded)RES.forEach(k=>{h+=chip(k);});
+ if(S.founded)RES.forEach(k=>{if(HIDE0[k]&&S.res[k]<0.5)return;h+=chip(k);});
  else['food','wood','stone','gold'].forEach(k=>{h+=chip(k);});
  h+='</div><div class="row2">';
  const td=(S.t%DAY)/DAY,night=td>0.78||td<0.06,hp=Math.round(S.happy);
@@ -142,6 +142,10 @@ function armyBar(){
   h+=btn('⚔ Tüm ordu','selarmy')+btn('✖','desel');
  }else if(sd.length){
   h+=btn('⚔ Ordu ('+sd.length+')','selarmy')+btn(UI.box?'▭ Kutu: AÇIK':'▭ Kutu seç','box');
+ }
+ if(!(us.length&&!panelOpen)&&S.founded&&typeof militia==='function'){
+  if(S.dyn&&heroOf('ruler'))h+=btn('📯 Milis çağır ('+militia().length+'/'+milCap()+')','callmil');
+  else if(militia().length)h+=btn('🏠 Milisi dağıt','relmil');
  }
  if(el.dataset.h!==h){el.innerHTML=h;el.dataset.h=h;}
  el.style.display=h?'flex':'none';

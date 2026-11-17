@@ -64,6 +64,15 @@ function drawCannon(u){
  ctx.restore();
  if(u.hp<u.mhp){const top=u.y-0.35;ctx.fillStyle='#000a';ctx.fillRect(u.x-0.3,top,0.6,0.1);ctx.fillStyle=u.hp/u.mhp>0.4?'#4caf50':'#e53935';ctx.fillRect(u.x-0.3,top,0.6*u.hp/u.mhp,0.1);}
 }
+function drawTool(k){
+ // sap elde tutulur: pivot = el. Sap elin altından başlar, uç yukarıda.
+ ctx.lineCap='butt';
+ ctx.strokeStyle='#3b2410';ctx.lineWidth=0.075;ctx.beginPath();ctx.moveTo(-0.01,0.16);ctx.lineTo(0.02,-0.46);ctx.stroke();
+ ctx.strokeStyle='#8a5a2a';ctx.lineWidth=0.045;ctx.beginPath();ctx.moveTo(-0.01,0.16);ctx.lineTo(0.02,-0.46);ctx.stroke();
+ if(k==='axe'){ctx.fillStyle='#2b2f36';ctx.beginPath();ctx.moveTo(0.02,-0.48);ctx.lineTo(0.27,-0.58);ctx.lineTo(0.3,-0.3);ctx.lineTo(0.02,-0.36);ctx.fill();ctx.fillStyle='#b9c2cc';ctx.beginPath();ctx.moveTo(0.04,-0.46);ctx.lineTo(0.24,-0.54);ctx.lineTo(0.26,-0.33);ctx.lineTo(0.04,-0.38);ctx.fill();}
+ else if(k==='pick'){ctx.strokeStyle='#2b2f36';ctx.lineWidth=0.1;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(-0.2,-0.38);ctx.quadraticCurveTo(0.02,-0.58,0.24,-0.38);ctx.stroke();ctx.strokeStyle='#b9c2cc';ctx.lineWidth=0.05;ctx.beginPath();ctx.moveTo(-0.19,-0.39);ctx.quadraticCurveTo(0.02,-0.56,0.23,-0.39);ctx.stroke();}
+ else{ctx.fillStyle='#2b2f36';ctx.fillRect(-0.12,-0.58,0.3,0.2);ctx.fillStyle='#9aa3ad';ctx.fillRect(-0.1,-0.56,0.26,0.07);}
+}
 drawUnit=function(u){
  if(u.t==='top')return drawCannon(u);
  const lk=mfLook(u),sh=lk?mfSheet(lk[0],lk[1],lk[2]):null;
@@ -78,7 +87,7 @@ drawUnit=function(u){
  const attacking=UT[u.t].mil&&u.cd>0&&u.cd>(UT[u.t].rof||1.3)-0.45;
  const working=u.team==='p'&&u.t==='koylu'&&!moved&&(u.st==='gather'||u.st==='work'||u.st==='build'||u.st==='hunt');
  if(u.st==='sleep'||u.wnd){row=0;n=1;}
- else if(attacking||working){row=mounted?3:2;n=cnt[2]||3;fps=6;}
+ else if(attacking||working){row=2;n=mounted?6:(cnt[2]||3);fps=mounted?12:6;}
  else if(moved){row=1;n=cnt[1];fps=10;}
  const fr=Math.floor(T*fps)%n;
  const size=mounted?1.9:1.7,fx=(u.fdir||1);
@@ -93,8 +102,8 @@ drawUnit=function(u){
    ctx.fillStyle='#5a3a1c';ctx.fillRect(0.1,1.08,0.4,0.045);
    ctx.fillStyle='#8a5a2a';ctx.fillRect(0.3,1.14,0.36,0.15);ctx.fillStyle='#4b2f16';ctx.fillRect(0.3,1.27,0.36,0.04);
    ctx.fillStyle='#222';ctx.beginPath();ctx.arc(0.68,1.46,0.1,0,6.3);ctx.fill();ctx.fillStyle='#999';ctx.beginPath();ctx.arc(0.68,1.46,0.04,0,6.3);ctx.fill();}
-  else{const em=(j==='lum'||j==='wood')?'🪓':j==='mine'?'⛏':j==='build'?'🔨':null;
-   if(em){ctx.save();ctx.translate(0.22,1.12);ctx.rotate(sw);ctx.drawImage(spr(em),-0.05,-0.3,0.42,0.42);ctx.restore();}}
+  else{const tl=(j==='lum'||j==='wood')?'axe':j==='mine'?'pick':j==='build'?'ham':null;
+   if(tl){ctx.save();ctx.translate(0.27,1.12);ctx.rotate(sw);drawTool(tl);ctx.restore();}}
  }
  if(u.fl&&S.t-u.fl<0.15){ctx.globalAlpha=0.4;ctx.fillStyle='#fff';ctx.fillRect(-size*0.2,size*0.35,size*0.4,size*0.55);ctx.globalAlpha=1;}
  ctx.restore();
@@ -110,6 +119,24 @@ drawUnit=function(u){
 function wallAt(x,y){
  if(!inMap(x,y))return false;const id=OCC[y*MW+x];if(!id)return false;
  const o=BM.get(id);return !!(o&&(o.t==='duvar'||o.t==='kapi')&&o.team==='p');
+}
+function drawWallV(x,y,U,D,L,R,hasH){
+ const x0=x+0.29,w=0.42,y0=y-0.82,y1=y+0.18;
+ ctx.fillStyle='#3a3f44';ctx.fillRect(x0-0.03,y0-(U?0:0.03),w+0.06,y1-y0+(U?0:0.03)+(hasH?0:0.03));
+ ctx.fillStyle='#a8b5ba';ctx.fillRect(x0,y0-0.015,w,y1-y0+0.03);
+ ctx.fillStyle='#b87455';ctx.fillRect(x0+0.08,y0-0.015,w-0.16,y1-y0+0.03);
+ ctx.fillStyle='#cf8a66';ctx.fillRect(x0+0.08,y0,0.04,y1-y0);
+ ctx.fillStyle='#9a5d44';ctx.fillRect(x0+w-0.12,y0,0.04,y1-y0);
+ ctx.fillStyle='#7c868a';ctx.fillRect(x0+w-0.08,y0-0.015,0.08,y1-y0+0.03);
+ ctx.fillStyle='#8f9ba0';for(let k=0;k<2;k++){const sy=y0+0.25+k*0.5;ctx.fillRect(x0,sy,0.08,0.03);ctx.fillRect(x0+w-0.08,sy+0.1,0.08,0.03);}
+ ctx.fillStyle='#9a5d44';for(let k=0;k<2;k++)ctx.fillRect(x0+0.08,y0+0.3+k*0.5,w-0.16,0.03);
+ if(!D&&!hasH){ // serbest uç: ön yüz
+  const fy=y1,fh=0.72;
+  ctx.fillStyle='#3a3f44';ctx.fillRect(x0-0.03,fy,w+0.06,fh+0.03);
+  ctx.fillStyle='#879297';ctx.fillRect(x0,fy,w,fh);ctx.fillStyle='#a8b5ba';ctx.fillRect(x0,fy,w,0.1);
+  ctx.fillStyle='#6a7276';ctx.fillRect(x0+w-0.1,fy+0.1,0.1,fh-0.1);
+  ctx.fillStyle='#5e656a';for(let k=1;k<3;k++)ctx.fillRect(x0,fy+k*0.24,w,0.03);
+ }
 }
 const SURW=1.55,SURH=1.57;
 const _drawBuildingOld=drawBuilding;
@@ -147,8 +174,9 @@ drawBuilding=function(b){
  if(b.t==='agil'){drawAgil(b);if(b.pri&&!b.done)ctx.drawImage(spr('⭐'),b.x+b.w-0.5,b.y,0.5,0.5);return;}
  if(b.t!=='duvar'&&b.t!=='kapi'){_drawBuildingOld(b);
   if(b.done&&b.team==='p'&&PROPS[b.t])PROPS[b.t].forEach(([n,fx,fy])=>drawProp(n,b.x+b.w*fx,b.y+b.h*fy,1/26));
+  if(b.lvl&&b.team==='p')ctx.drawImage(spr('⭐'),b.x+b.w-(b.w>=2?0.5:0.4),b.y+(b.w>=2?0.5:0.05),0.4,0.4);
   if(b.t==='ahir'&&b.done&&b.team==='p'){
-   const pos=[[0.58,0.62,'horse',0],[0.8,0.8,'cow',1],[0.45,0.85,'horse',1]];
+   const pos=[[0.3,1.04,'horse',0],[0.8,1.07,'horse',1]];
    pos.forEach(([px,py,nm,fl])=>drawAn(nm,b.x+b.w*px,b.y+b.h*py,fl,1/30));
   }if(b.pri&&!b.done)ctx.drawImage(spr('⭐'),b.x+b.w-0.5,b.y,0.5,0.5);return;}
  const x=b.x,y=b.y,L=wallAt(x-1,y),R=wallAt(x+1,y),U=wallAt(x,y-1),D=wallAt(x,y+1);
@@ -160,9 +188,15 @@ drawBuilding=function(b){
   if(a||c)tags.push('d1');else if(e||f)tags.push('d2');else tags.push('h');
  }
  ctx.globalAlpha=b.done?1:0.5;
+ const hasH=tags.includes('h'),hasV=tags.includes('v');
+ if(b.t==='duvar'&&hasV)drawWallV(x,y,U,D,L,R,hasH);
  for(const tg of tags){
   const im=img('s_'+b.t+'_'+tg);
+  if(b.t==='duvar'&&tg==='v')continue;
   if(im&&tg==='v')ctx.drawImage(im,x+0.5-SURW/2,y,SURW,1.0);
+  else if(im&&tg==='h'&&hasV&&b.t==='duvar'&&!(L&&R)){ // köşe: kolu yarıya kırp, çıkıntı kalmasın
+   ctx.save();ctx.beginPath();if(L)ctx.rect(x-0.6,y-2,0.6+0.71,5);else ctx.rect(x+0.29,y-2,1.5,5);ctx.clip();
+   ctx.drawImage(im,x+0.5-SURW/2,y+0.95-SURH,SURW,SURH);ctx.restore();}
   else if(im)ctx.drawImage(im,x+0.5-SURW/2,y+0.95-SURH,SURW,SURH);
   else{ctx.fillStyle='#8a8a90';ctx.fillRect(x+0.1,y+0.1,0.8,0.8);}
  }

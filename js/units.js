@@ -2,10 +2,17 @@
 // ===== BİRİMLER: köylü işleri, savaş, bina güncellemesi =====
 const JOBRES={wood:[2,'wood'],lum:[2,'wood'],mine:[3,'stone'],forage:[6,'food']};
 const ORET={stone:3,iron:4,gold:5};
-function resOf(u){const j=u.job;if(j==='mine'){const b=BM.get(u.wb),o=(b&&b.ore)||'stone';return[ORET[o],o];}return JOBRES[j];}
+function autoOre(b){ // dengeli: stoğu en az olan, ulaşılabilir maden
+ if(b.aoT&&b.aoT>S.t&&b.ao)return b.ao;
+ const order=['stone','iron','gold'].sort((a,c)=>(S.res[a]||0)-(S.res[c]||0));
+ let pick='stone';for(const o of order){if(findRes(ORET[o],b.x+b.w/2,b.y+b.h/2)>=0){pick=o;break;}}
+ b.ao=pick;b.aoT=S.t+20;return pick;
+}
+function resOf(u){const j=u.job;if(j==='mine'){const b=BM.get(u.wb);let o=(b&&b.ore)||'stone';if(o==='auto')o=autoOre(b);return[ORET[o],o];}return JOBRES[j];}
+function hutBonus(){let n=0;for(const b of S.blds)if(b.team==='p'&&b.t==='oduncu'&&b.done)n++;return 1+0.1*Math.min(3,n);}
 const HAUL=10,HUTCAP=60;
 const JOBBT={};JOBS.forEach(j=>{if(j.bt)JOBBT[j.id]=j.bt;});
-const FARMS=[1.0,1.4,1.2,0.25],HERDS=[0.8,1,1,0.6],FORAGES=[1,1.2,1.6,0.15];
+const FARMS=[1.0,1.4,1.2,0.25],HERDS=[0.8,1,1,0.6],FORAGES=[1,1.2,1.6,0.15],FISH=[1,1.15,1,0.5],VEG=[0.9,1.2,1.3,0.6],FLAX=[0.8,1.3,1.0,0.1];
 
 function storeCap(){let up=0;for(const b of S.blds)if(b.team==='p'&&b.t==='depo'&&b.done&&b.lvl)up+=300;return 400+400*countB('depo',true)+up+fxa('store');}
 function addRes(k,n){const c=storeCap();S.res[k]=Math.min(c,(S.res[k]||0)+n);}
@@ -19,7 +26,7 @@ function popCap(){let n=0;for(const b of S.blds)if(b.team==='p'&&b.done)n+=(BT[b
 function gatherRate(j){
  const tool=S.res.alet>=0.2?1.25:1;
  if(j==='forage')return 0.9*fxm('forage')*FORAGES[seas()]*happyMul();
- return 0.9*fxm('gather')*tool*(seas()===3?0.8:1)*happyMul();
+ return 0.9*fxm('gather')*tool*((j==='lum'||j==='wood')?hutBonus():1)*(seas()===3?0.8:1)*happyMul();
 }
 function findRes(ty,x,y){let best=-1,bd=1e9;
  for(let i=0;i<NN;i++){
@@ -133,8 +140,16 @@ function workTick(u,dt){
  if(!b||!b.done||b.hp<=0){u.st='idle';u.wb=0;return;}
  const j=u.job,s=seas();
  const hm=happyMul();
- if(j==='farm')addRes('food',0.10*dt*FARMS[s]*fxm('farm')*(S.drought>0?0.5:1)*hm*(b.lvl?1.5:1));
- else if(j==='herd'){addRes('food',0.065*dt*HERDS[s]*hm*(b.lvl?1.5:1));addRes('deri',0.012*dt*hm);}
+ if(j==='farm'){
+  const crop=b.crop||'bugday',m=hm*(b.lvl?1.3:1),bk=(S.bakeT&&S.t-S.bakeT<3)?1.2:1;
+  if(crop==='keten')addRes('keten',0.075*dt*FLAX[s]*fxm('farm')*(S.drought>0?0.5:1)*m);
+  else if(crop==='sebze')addRes('food',0.075*dt*VEG[s]*fxm('farm')*(S.drought>0?0.6:1)*m);
+  else addRes('food',0.10*dt*FARMS[s]*fxm('farm')*(S.drought>0?0.5:1)*m*bk);
+ }
+ else if(j==='fish'){const nd=Math.max(1,countB('iskele',true));addRes('food',0.085*dt*FISH[s]*fxm('fish')*hm*(b.lvl?1.3:1)/(1+0.2*(nd-1)));}
+ else if(j==='bake'){S.bakeT=S.t;S.res.wood=Math.max(0,S.res.wood-0.012*dt);}
+ else if(j==='tailor'){u.tm+=dt;if(u.tm>=10){const R=S.res;if(R.keten>=3){R.keten-=3;addRes('giyim',1);u.tm=0;}else if(R.deri>=2){R.deri-=2;addRes('giyim',1);u.tm=0;}else u.tm=8;}}
+ else if(j==='herd'){addRes('food',0.065*dt*HERDS[s]*hm*(b.lvl?1.3:1));addRes('deri',0.012*dt*hm);}
  else if(j==='trade')addRes('gold',0.07*dt*fxm('trade')*(1+0.25*pactCount())*hm);
  else if(j==='smith'){u.tm+=dt;if(u.tm>=12){
   const R=S.res,mk=b.mk||'auto';
@@ -171,7 +186,6 @@ function updVillager(u,dt){
  if(isNight()&&u.job!=='fire'&&u.job!=='doc'){
   if(u.st!=='sleep'&&u.st!=='toBed'){
    const h=nearestB(u,b=>b.team==='p'&&b.done&&(b.t==='ev'||b.t==='tc'));
-   u.wb=0;u.carry=u.carry;
    if(h&&setPath(u,h.x,h.y,h.w,h.h,1,true)===1)u.st='toBed';else u.st='sleep';
   }
   if(u.st==='toBed'){if(walkTo(u,dt))u.st='sleep';return;}
@@ -196,7 +210,7 @@ function updVillager(u,dt){
   case 'hsite':if(walkTo(u,dt)){const s=BM.get(u.sb);if(s&&!s.done)s.mat=Math.min(s.need||1e9,(s.mat||0)+u.carry);u.carry=0;u.st='idle';u.wait=0.3;}break;
   case 'cmd':
    if(!u.path){if(u.cmdGo){u.cmdGo=0;u.st='idle';u.wait=0.6;break;}u.cmdGo=1;if(setPath(u,u.gx,u.gy,1,1,0,true)!==1){u.cmdGo=0;u.st='idle';}}
-   else if(walkTo(u,dt)){u.cmdGo=0;u.st='idle';u.wait=0.8;}
+   else if(walkTo(u,dt)){u.cmdGo=0;u.st='idle';u.wait=0.3;if(u.cmdRes>0){u.ti=u.cmdRes;u.cmdRes=0;}}
    break;
   case 'work':workTick(u,dt);break;
   case 'toSite':if(walkTo(u,dt))u.st='build';break;

@@ -58,7 +58,7 @@ function selInfo(){
  if(UI.sel.kind==='u'){
   const us=UI.sel.ids.map(id=>UM.get(id)).filter(Boolean);
   if(!us.length){UI.sel=null;el.style.display='none';return;}
-  if(us.length===1){const u=us[0],d=UT[u.t];const j=u.job?JOBS.find(j=>j.id===u.job):null;t=d.g+' '+d.n+(j?' — '+j.n:'')+' — '+Math.ceil(u.hp)+'/'+u.mhp+' HP';}
+  if(us.length===1){const u=us[0],d=UT[u.t];const j=u.job?JOBS.find(j=>j.id===u.job):null;t=d.g+' '+d.n+(j?' ('+j.n+')':'')+' — '+Math.ceil(u.hp)+'/'+u.mhp+' HP';}
   else t=us.length+' birim seçili';
  }
  el.textContent=t;el.style.display=t?'block':'none';
@@ -156,7 +156,7 @@ function pDyn(){
  h+='<div class="row">'+(heroOf('ruler')?btn('🏠 Saraya çağır','unhero','ruler'):btn('⚔ Orduya çağır','hero','ruler',!mainTC()))+'<small>Hükümdar komutan olur: yakındaki askerlere +%15 saldırı, öldürdükçe seviye atlar. Savaşta düşerse tahtı kaybedersin!</small></div>';
  h+=heroBox('ruler',r);
  h+=D.spouse?'<div style="margin-top:4px">💍 Eş: <b>'+D.spouse.name+'</b> ('+D.spouse.age+') — '+KINGS[D.spouse.from].n+'</div>':'<div style="margin-top:4px"><small>💍 Evli değilsin. Komşu hanedanlarla ilişkiyi artır, evlilik teklifi gelebilir ya da Diplomasi\'den teklif et.</small></div>';
- h+='<div style="margin-top:4px">👶 Varisler: '+(D.heirs.length?D.heirs.map(x=>x.name+' ('+x.age+', '+TRAITS[x.trait].n+')').join(' · '):'<small>yok</small>')+'</div>';
+ h+='<div style="margin-top:4px">👶 Varisler (evli değilsen tahta kardeşin geçer): '+(D.heirs.length?D.heirs.map(x=>(x.sib?'Kardeşin ':'')+x.name+' ('+x.age+', '+TRAITS[x.trait].n+')').join(' · '):'<small>yok</small>')+'</div>';
  D.heirs.filter(x=>x.age>=HEROAGE).forEach(x=>{h+='<div class="row">'+(heroOf('heir:'+x.name)?btn('🏠 '+x.name+' saraya','unhero','heir:'+x.name):btn('⚔ '+x.name+' orduya','hero','heir:'+x.name,!mainTC()))+'<small>Varis komutan olarak savaşabilir.</small></div>'+heroBox('heir:'+x.name,x);});
  {const kid=D.heirs.filter(x=>x.age<HEROAGE+2).sort((a,b)=>b.age-a.age)[0];if(kid)h+='<div class="row">'+btn('🎓 Eğitim: '+kid.name+' (120💰, +2 yaş)','edu',null,(D.eduCool||0)>0||S.res.gold<120)+'<small>'+((D.eduCool||0)>0?'Bekleme: '+D.eduCool+' hanedan yılı':'Usta öğretmenler varisi hızla yetiştirir.')+'</small></div>';}
  h+='<div><small>⏳ Hanedan hızı: 1 hanedan yılı = '+DYT+' gün (varisler ve hükümdar bu hızla yaşlanır). '+HEROAGE+' yaşında komutan olabilirler.</small></div>';
@@ -191,10 +191,16 @@ function pSel(){
  if(b.team==='p'&&!b.done){h+='<div class="row">'+btn(b.pri?'⭐ Öncelik: AÇIK':'☆ Öncelikli inşa et','pri',b.id)+btn('✖ İptal ('+(b.prog<0.02?'tam iade':'%50 iade')+')','cancelb',b.id)+'</div><small>Öncelikli binayı işçiler ve taşıyıcılar diğerlerinden önce yapar.</small>';}
  if(b.team==='p'&&b.done&&(b.t==='oduncu'||b.t==='maden')){
   const jid=b.t==='oduncu'?'lum':'mine',have=jobCount(jid),mine=S.units.filter(u=>u.wb===b.id&&u.job===jid&&!u.dead).length;
+  if(b.t==='oduncu')h+='<div>🪓 Kulübe bonusu: tüm odun toplama <b>+%'+Math.round((hutBonus()-1)*100)+'</b> (her kulübe +%10, en çok +%30)</div>';
+  if(b.t==='maden'&&(b.ore==='auto'))h+='<div>⚖ Şu an çıkarılan: <b>'+RN[autoOre(b)]+'</b></div>';
   h+='<div>👷 Çalışan: <b>'+mine+'/'+SLOTS[b.t]+'</b> · 📦 Kulübe stoğu: '+Math.round(b.buf||0)+'/'+HUTCAP+' <small>(dolunca işçiler depoya taşır)</small></div>';
-  if(b.t==='maden'){h+='<div class="row"><b>Çıkarılacak maden:</b>'+['stone','iron','gold'].map(o=>'<button data-a="ore" data-v="'+b.id+'" data-w="'+o+'"'+((b.ore||'stone')===o?' style="background:#6a4e22;border-color:#ffd070"':'')+'>'+RI[o]+' '+RN[o]+'</button>').join('')+'</div><small>Bu kulübedeki işçiler yalnızca seçtiğin madeni çıkarır.</small>';}
+  if(b.t==='maden'){h+='<div class="row"><b>Çıkarılacak maden:</b>'+['auto','stone','iron','gold'].map(o=>'<button data-a="ore" data-v="'+b.id+'" data-w="'+o+'"'+((b.ore||'stone')===o?' style="background:#6a4e22;border-color:#ffd070"':'')+'>'+(o==='auto'?'⚖ Dengeli':RI[o]+' '+RN[o])+'</button>').join('')+'</div><small>Bu kulübedeki işçiler seçtiğin madeni çıkarır. ⚖ Dengeli: stoğu en az olan madeni (taş/demir/altın) otomatik seçer.</small>';}
   h+='<div class="row">'+btn('➕ İşçi ekle','jp',jid)+btn('➖ İşçi çıkar','jm',jid)+'<small>Toplam '+jid+' işçi: '+have+'/'+(S.jobs[jid]||0)+' (Halk menüsünden de ayarlanır)</small></div>';
  }
+ if(b.team==='p'&&b.done&&b.t==='ciftlik'){const cr=b.crop||'bugday';
+  h+='<div class="row"><b>Ekin:</b>'+[['bugday','🌾 Buğday'],['sebze','🥕 Sebze'],['keten','🌿 Keten']].map(o=>'<button data-a="crop" data-v="'+b.id+'" data-w="'+o[0]+'"'+(cr===o[0]?' style="background:#6a4e22;border-color:#ffd070"':'')+'>'+o[1]+'</button>').join('')+'</div><small>🌾 Buğday: en çok yiyecek (yaz/sonbahar), kışın durur. 🥕 Sebze: daha az ama kışın da verir. 🌿 Keten: yiyecek yerine terzi için kumaşlık lif.</small>';}
+ if(b.team==='p'&&b.done&&b.t==='terzi')h+='<div>🧥 Giyim: <b>'+Math.floor(S.res.giyim||0)+'</b> · 🐄 Deri: '+Math.floor(S.res.deri||0)+' · 🌿 Keten: '+Math.floor(S.res.keten||0)+'</div>';
+ if(b.team==='p'&&b.done&&SLOTS[b.t]&&b.t!=='oduncu'&&b.t!=='maden'){const jo=JOBS.find(j=>j.bt===b.t);if(jo){const n=S.units.filter(u=>u.wb===b.id&&u.job===jo.id&&!u.dead).length;h+='<div>👷 Çalışan: <b>'+n+'/'+SLOTS[b.t]+'</b> ('+jo.n+')</div>';}}
  if(b.team==='p'&&b.done&&b.t==='demirci'){
   const mk=b.mk||'auto',opts=[['auto','⚙ Otomatik'],['alet','🔨 Alet'],['silah','🗡 Silah'],['zirh','🛡 Zırh'],['off','⏸ Durdur']];
   h+='<div class="row"><b>Üretim:</b>'+opts.map(o=>'<button data-a="mk" data-v="'+b.id+'" data-w="'+o[0]+'"'+(mk===o[0]?' style="background:#6a4e22;border-color:#ffd070"':'')+'>'+o[1]+'</button>').join('')+'</div><small>Alet: 1 demir+1 odun → 2 alet · Silah: 2 demir+2 odun · Zırh: 2 demir+2 deri. Otomatik, dengeli üretir ve stok sınırı koyar; seçili modda sınırsız üretir.</small>';
@@ -222,7 +228,7 @@ function updPanel(force){
 function updHud(){
  const cap=storeCap();
  let h='';
- if(S.founded)RES.forEach(k=>{h+='<span>'+RI[k]+Math.floor(S.res[k])+(NOCAP[k]?'':'/'+cap)+'</span>';});
+ if(S.founded)RES.forEach(k=>{if(HIDE0[k]&&S.res[k]<0.5)return;h+='<span>'+RI[k]+Math.floor(S.res[k])+(NOCAP[k]?'':'/'+cap)+'</span>';});
  else h+='<span>🍖'+Math.floor(S.res.food)+'</span><span>🌲'+Math.floor(S.res.wood)+'</span><span>🧱'+Math.floor(S.res.stone)+'</span><span>💰'+Math.floor(S.res.gold)+'</span>';
  h+='<br><span>👥 '+popNow()+'/'+popCap()+'</span><span>🙂'+Math.round(S.happy)+'</span><span>📅 '+dayText()+'</span><span>'+AGES[S.age]+' · '+RANKS[S.rank]+'</span>';
  if(S.epi)h+='<span>🤒</span>';
@@ -285,6 +291,7 @@ function act(a,v,w,el){
   case 'selarmy':UI.sel={kind:'u',ids:soldiers().map(u=>u.id)};UI.tab=null;updPanel(true);break;
   case 'retreat':{const tc=mainTC();if(tc)cmdMove(soldiers(),tc.x+tc.w/2,tc.y+tc.h+1,false);break;}
   case 'mk':{const b=BM.get(+v);if(b&&b.t==='demirci'){b.mk=w;log('⚒ Demirhane üretimi: '+({auto:'otomatik',alet:'alet',silah:'silah',zirh:'zırh',off:'durduruldu'})[w]+'.');}updPanel(true);break;}
+  case 'crop':{const b=BM.get(+v);if(b&&b.t==='ciftlik'){b.crop=w;log('🌾 Çiftlik ekimi: '+({bugday:'Buğday',sebze:'Sebze',keten:'Keten'}[w])+'.');}updPanel(true);break;}
   case 'ore':{const b=BM.get(+v);if(b&&b.t==='maden'){b.ore=w;for(const u of S.units)if(u.wb===b.id&&u.job==='mine'){u.ti=-1;u.carry=0;u.st='idle';u.path=null;}log('⛏ Madenci kulübesi artık '+RN[w]+' çıkaracak.');}updPanel(true);break;}
   case 'upg':{const b=BM.get(+v);if(b&&UPG[b.t]&&!b.lvl&&UPG[b.t].age<=S.age&&afford(UPG[b.t].cost)){pay(UPG[b.t].cost);b.lvl=1;b.hp=Math.max(b.hp,b.mhp);log('⬆ '+UPG[b.t].n+' tamamlandı.',b.x,b.y);}updPanel(true);break;}
   case 'pri':{const b=BM.get(+v);if(b){b.pri=!b.pri;}updPanel(true);break;}

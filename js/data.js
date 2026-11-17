@@ -19,10 +19,11 @@ const SEASONS=['İlkbahar','Yaz','Sonbahar','Kış'];
 const AGES=['Taş Çağı','Bronz Çağı','Demir Çağı','Orta Çağ','Barut Çağı'];
 const RANKS=['Köy','Kale','Şehir','Lordluk','Krallık'];
 const TITLES=['Köy Muhtarı','Kale Beyi','Şehir Başkanı','Lord','Kral'];
-const RES=['food','wood','stone','iron','gold','silah','deri','alet','zirh'];
-const NOCAP={silah:1,deri:1,alet:1,zirh:1};
-const RN={food:'Yiyecek',wood:'Odun',stone:'Taş',iron:'Demir',gold:'Altın',silah:'Silah',deri:'Deri',alet:'Alet',zirh:'Zırh'};
-const RI={food:'🍖',wood:'🌲',stone:'🧱',iron:'🔩',gold:'💰',silah:'🗡',deri:'🧥',alet:'🔨',zirh:'🛡'};
+const RES=['food','wood','stone','iron','gold','deri','keten','giyim','silah','alet','zirh'];
+const NOCAP={silah:1,deri:1,alet:1,zirh:1,giyim:1,keten:1};
+const HIDE0={silah:1,deri:1,alet:1,zirh:1,giyim:1,keten:1}; // 0 iken HUD'da gizlenir
+const RN={food:'Yiyecek',wood:'Odun',stone:'Taş',iron:'Demir',gold:'Altın',silah:'Silah',deri:'Deri',alet:'Alet',zirh:'Zırh',giyim:'Giyim',keten:'Keten'};
+const RI={food:'🍖',wood:'🌲',stone:'🧱',iron:'🔩',gold:'💰',silah:'🗡',deri:'🐄',alet:'🔨',zirh:'🛡',giyim:'🧥',keten:'🌿'};
 
 const JOBS=[
  {id:'build',n:'İnşaatçı',ic:'🔨',d:'Yeni binaları inşa eder.'},
@@ -30,17 +31,20 @@ const JOBS=[
  {id:'wood',n:'Serbest Oduncu',ic:'🌲',d:'Ağacı her yerden keser, en yakın depoya taşır.'},
  {id:'lum',n:'Oduncu',ic:'🪓',bt:'oduncu',d:'Oduncu kulübesine bağlı: kulübe çevresinde keser, önce kulübeye, dolunca depoya taşır.'},
  {id:'mine',n:'Madenci',ic:'⛏',bt:'maden',d:'Madenci kulübesine bağlı: kulübede seçilen maden türünü (taş/demir/altın) çıkarır.'},
- {id:'forage',n:'Toplayıcı',ic:'🍓',d:'Yabani meyve toplar.'},
+ {id:'forage',n:'Toplayıcı',ic:'🧺',d:'Yabani meyve toplar.'},
  {id:'farm',n:'Çiftçi',ic:'🌾',bt:'ciftlik',d:'Çiftlikte çalışır (çiftlik başına 3).'},
- {id:'herd',n:'Çoban',ic:'🐑',bt:'agil',d:'Ağılda hayvan bakar (ağıl başına 3).'},
+ {id:'herd',n:'Çoban',ic:'🐑',bt:'agil',d:'Ağılda hayvan bakar (ağıl başına 3). Yiyecek ve deri verir.'},
+ {id:'fish',n:'Balıkçı',ic:'🎣',bt:'iskele',d:'İskelede balık tutar (iskele başına 3). Kışın azalır, çok iskele birbirinin balığını azaltır.'},
+ {id:'tailor',n:'Terzi',ic:'🧵',bt:'terzi',d:'Deriden veya keten bitkisinden giyim dikiş. Kışlık giyim mutluluğu korur.'},
+ {id:'bake',n:'Fırıncı',ic:'🥖',bt:'firin',d:'Fırında ekmek pişirir: çiftliklerin buğday verimi +%20, mutluluk +4. Odun yakar.'},
  {id:'smith',n:'Silahçı',ic:'⚒',bt:'demirci',d:'Alet (demir+odun), zırh (demir+deri) ve silah (demir+odun) üretir. Aletler toplama hızını, zırh kılıçlı/şövalye eğitimini destekler.'},
  {id:'fire',n:'İtfaiyeci',ic:'🚒',bt:'itfaiye',d:'Yangınları söndürür.'},
  {id:'doc',n:'Şifacı',ic:'💊',bt:'hastane',d:'Yaralıları iyileştirir, salgını azaltır.'},
  {id:'trade',n:'Tüccar',ic:'💱',bt:'pazar',d:'Pazarda altın kazandırır.'},
  {id:'hunt',n:'Avcı',ic:'🦌',bt:'avci',d:'Geyik ve yaban domuzu avlar (kurtlara dikkat).'}
 ];
-const JOB_ORDER=['farm','herd','forage','hunt','lum','mine','wood','haul','build','smith','fire','doc','trade'];
-const SLOTS={oduncu:4,maden:4,ciftlik:3,agil:3,demirci:3,itfaiye:2,hastane:3,pazar:2,avci:2};
+const JOB_ORDER=['farm','herd','fish','forage','hunt','bake','tailor','lum','mine','wood','haul','build','smith','fire','doc','trade'];
+const SLOTS={iskele:3,terzi:2,firin:2,oduncu:4,maden:4,ciftlik:3,agil:3,demirci:3,itfaiye:2,hastane:3,pazar:2,avci:2};
 
 // Binalar. age: gereken çağ, rank: gereken ünvan
 const BT={
@@ -52,14 +56,17 @@ const BT={
  demirci:{n:'Demirhane',ic:'⚒',w:3,h:3,hp:260,age:1,cost:{wood:100,stone:80,iron:30},time:22,col:'#555',d:'Demir ocağı: alet, silah ve zırh üretir. Ne üretileceğini binaya dokunarak seç.'},
  kisla:{n:'Kışla',ic:'⚔',w:3,h:3,hp:320,age:0,cost:{wood:120,stone:40},time:20,col:'#6b6b6b',train:['mizrakli','kilic'],d:'Mızraklı ve kılıçlı asker eğitir.'},
  okcu:{n:'Okçu Menzili',ic:'🏹',w:3,h:3,hp:280,age:0,cost:{wood:110,stone:20},time:20,col:'#6b7b4b',train:['okcu'],d:'Okçu eğitir.'},
- ahir:{n:'Ahır',ic:'🐎',w:3,h:3,hp:300,age:2,cost:{wood:150,stone:80,gold:40},time:22,col:'#7b5b3b',train:['atli','atliokcu'],d:'Atlı şövalye ve atlı okçu eğitir.'},
+ ahir:{n:'Süvari Ocağı',ic:'🐎',w:3,h:3,hp:300,age:2,cost:{wood:150,stone:80,gold:40},time:22,col:'#7b5b3b',train:['atli','atliokcu'],d:'Atlı şövalye ve atlı okçu eğitir.'},
  topcu:{n:'Top Dökümhanesi',ic:'💣',w:3,h:3,hp:360,age:4,cost:{wood:200,stone:150,iron:150,gold:100},time:30,col:'#4b4b55',train:['top'],d:'Top üretir (Barut teknolojisi gerekir).'},
  kule:{n:'Gözcü Kulesi',ic:'🗼',w:2,h:2,hp:260,age:0,cost:{wood:90,stone:20},time:14,atk:7,rng:7.5,col:'#8a6a4a',d:'Ucuz savunma: yakındaki düşmanlara ok atar. Kale ünvanı için gerekli.'},
  tkule:{n:'Taş Kule',ic:'🏯',w:2,h:2,hp:520,age:1,cost:{wood:50,stone:160},time:22,atk:13,rng:9,col:'#8a8a8a',d:'Sağlam taş kule: güçlü ok atışı, uzun menzil.'},
  kapi:{n:'Sur Kapısı',ic:'🚪',w:1,h:1,hp:220,age:0,cost:{wood:10,stone:2},time:4,arm:2,gate:1,col:'#8a5a2a',d:'Sura kapı: halk ve askerlerimiz geçer, haydutlar ve düşmanlar geçemez, yıkmak zorunda kalır.'},
  duvar:{n:'Sur',ic:'🧱',w:1,h:1,hp:160,age:0,cost:{wood:4,stone:1},time:3,arm:2,col:'#7a6a55',d:'Taş sur: düşmanları yönlendirir ve durdurur. Seçip parmağını sürükleyerek hat çiz.'},
- oduncu:{n:'Oduncu Kulübesi',ic:'🪓',w:2,h:2,hp:160,age:0,cost:{wood:50},time:10,col:'#6a4a2a',drop:['wood'],d:'Ormanın yanına kur: oduncular odunu buraya bırakır, yürüyüş kısalır.'},
+ oduncu:{n:'Oduncu Kulübesi',ic:'🪓',w:2,h:2,hp:160,age:0,cost:{wood:50},time:10,col:'#6a4a2a',drop:['wood'],d:'Ormanın yanına kur: oduncular odunu buraya bırakır. Her kulübe tüm odun toplamayı %10 hızlandırır (en çok %30).'},
  maden:{n:'Madenci Kulübesi',ic:'⛏',w:2,h:2,hp:180,age:0,cost:{wood:70,stone:30},time:14,col:'#666',drop:['stone','iron','gold'],d:'Taş ocağı veya maden yanına kur: taş, demir ve altın buraya bırakılır.'},
+ iskele:{n:'Balıkçı İskelesi',ic:'🎣',w:2,h:2,hp:140,age:0,cost:{wood:80},time:14,shore:1,col:'#3a6a8a',d:'SADECE su kenarına kurulur. 3 balıkçı. Kışın verim düşer; aynı gölde çok iskele kurarsan balık azalır.'},
+ terzi:{n:'Terzi Dükkânı',ic:'🧵',w:2,h:2,hp:160,age:1,cost:{wood:90,stone:20,gold:20},time:16,col:'#8a5a7a',d:'2 terzi: 2 deriden veya 3 ketenden 1 giyim diker. Çiftlikte keten ekebilir, ağılda deri elde edersin.'},
+ firin:{n:'Fırın',ic:'🥖',w:2,h:2,hp:200,age:1,cost:{wood:80,stone:50},time:18,col:'#a0522d',d:'2 fırıncı: çiftliklerin buğday verimi +%20, mutluluk +4. Her fırıncı odun yakar.'},
  avci:{n:'Avcı Kulübesi',ic:'🦌',w:2,h:2,hp:160,age:0,cost:{wood:60},time:12,col:'#7a5a3a',drop:1,d:'2 avcı: geyik ve yaban domuzu avlar (ava dikkat: kurtlar).'},
  sapel:{n:'Şapel',ic:'⛪',w:3,h:3,hp:300,age:1,cost:{wood:120,stone:120},time:26,col:'#ddd',d:'Halkın mutluluğunu artırır (+8, en çok 2 adet).'},
  han:{n:'Han / Meyhane',ic:'🍺',w:3,h:3,hp:240,age:1,cost:{wood:140,stone:40,gold:20},time:22,col:'#8a5a2a',d:'Mutluluk +6 (en çok 2). Ozan ve gezginler uğrar.'},
@@ -81,14 +88,14 @@ const BT={
 };
 const UPG={
  ev:{n:'Taş Ev',cost:{wood:80,stone:60},age:1,d:'+4 nüfus kapasitesi, daha sağlam.'},
- ciftlik:{n:'Gelişmiş Çiftlik',cost:{wood:80,stone:40},age:1,d:'Verim +%50.'},
- agil:{n:'Büyük Ağıl',cost:{wood:80,stone:40},age:1,d:'Verim +%50.'},
+ ciftlik:{n:'Gelişmiş Çiftlik',cost:{wood:80,stone:40},age:1,d:'Verim +%30.'},
+ agil:{n:'Büyük Ağıl',cost:{wood:80,stone:40},age:1,d:'Verim +%30.'},
  depo:{n:'Büyük Depo',cost:{wood:120,stone:80},age:1,d:'Depolama +300.'}
 };
 const BCAT=[
- ['Temel',['ev','depo','ciftlik','agil','avci','oduncu','maden']],
+ ['Temel',['ev','depo','ciftlik','agil','iskele','avci','oduncu','maden']],
  ['Askerî',['kisla','okcu','ahir','topcu','kule','tkule','duvar','kapi','kale']],
- ['Üretim & Şehir',['demirci','pazar','itfaiye','hastane','sapel','han','elcilik','saray']]
+ ['Üretim & Şehir',['demirci','pazar','firin','terzi','itfaiye','hastane','sapel','han','elcilik','saray']]
 ];
 
 // Birimler
@@ -117,19 +124,19 @@ const TECH={
  elarabasi:{n:'El Arabaları',age:0,cost:{wood:70,food:30},time:25,fx:{haul:1.5},d:'Taşıyıcılar tek seferde %50 daha fazla malzeme taşır'},
  yukarabasi:{n:'Demir Çemberli Yük Arabası',age:2,req:['elarabasi'],cost:{wood:120,iron:60},time:45,fx:{haul:1.5},d:'Taşıyıcı yükü bir %50 daha artar (toplam x2.25)'},
  milis:{n:'Milis Kuvvetleri',age:1,cost:{food:100,wood:80,gold:30},time:35,fx:{milis:1.3},d:'Milis cephanesi: milis canı ve saldırısı +%30, milis üst sınırı nüfusun %40\'ına çıkar'},
- tasbalta:{n:'Taş Balta',age:0,cost:{food:60,wood:60},time:25,fx:{gather:1.25},d:'Odun, taş, demir, altın toplama +%25'},
- toplayici:{n:'Toplayıcı Sepetleri',age:0,cost:{food:50,wood:40},time:20,fx:{forage:1.3},d:'Meyve toplama +%30'},
+ tasbalta:{n:'Taş Balta',age:0,cost:{food:60,wood:60},time:25,fx:{gather:1.15},d:'Odun, taş, demir, altın toplama +%15'},
+ toplayici:{n:'Toplayıcı Sepetleri',age:0,cost:{food:50,wood:40},time:20,fx:{forage:1.2},d:'Meyve toplama +%20'},
  ates:{n:'Ateş Kontrolü',age:0,cost:{wood:80,food:40},time:25,fx:{heat:0.7},d:'Kışın ısınma odunu -%30'},
- ekim:{n:'Ekim Bilgisi',age:0,cost:{food:80,wood:60},time:30,fx:{farm:1.2},d:'Çiftlik verimi +%20'},
+ ekim:{n:'Ekim Bilgisi',age:0,cost:{food:80,wood:60},time:30,fx:{farm:1.12},d:'Çiftlik verimi +%12'},
  bronzsilah:{n:'Bronz Silahlar',age:1,cost:{food:120,wood:80,gold:40},time:40,fx:{atk:1.15},d:'Asker saldırısı +%15'},
- saban:{n:'Bronz Saban',age:1,req:['ekim'],cost:{food:150,wood:100},time:40,fx:{farm:1.25},d:'Çiftlik verimi +%25'},
+ saban:{n:'Bronz Saban',age:1,req:['ekim'],cost:{food:150,wood:100},time:40,fx:{farm:1.15},d:'Çiftlik verimi +%15'},
  depolama:{n:'Çömlek Depolama',age:1,cost:{wood:120,stone:60},time:35,add:{store:400},d:'Stok kapasitesi +400'},
  kuyu:{n:'Su Kuyuları',age:1,req:['depolama'],cost:{wood:100,stone:80},time:35,fx:{fire:1.6},d:'İtfaiye verimi +%60'},
  kervan:{n:'Kervan Yolları',age:1,req:['depolama'],cost:{wood:100,gold:60},time:40,fx:{trade:1.5},d:'Ticaret geliri +%50'},
  demirzirh:{n:'Demir Zırh',age:2,req:['bronzsilah'],cost:{food:200,iron:120,gold:60},time:50,add:{arm:2},d:'Asker zırhı +2'},
- demiralet:{n:'Demir Aletler',age:2,req:['tasbalta'],cost:{wood:150,iron:100},time:50,fx:{gather:1.3},d:'Toplama +%30'},
+ demiralet:{n:'Demir Aletler',age:2,req:['tasbalta'],cost:{wood:150,iron:100},time:50,fx:{gather:1.2},d:'Toplama +%20'},
  sifa:{n:'Şifacılık',age:2,req:['kuyu'],cost:{food:150,gold:80},time:45,fx:{heal:1.5},d:'Hastane etkisi +%50, salgın kayıpları azalır'},
- rotasyon:{n:'Ürün Rotasyonu',age:2,req:['saban'],cost:{food:250,wood:150},time:50,fx:{farm:1.3},d:'Çiftlik verimi +%30'},
+ rotasyon:{n:'Ürün Rotasyonu',age:2,req:['saban'],cost:{food:250,wood:150},time:50,fx:{farm:1.18},d:'Çiftlik verimi +%18'},
  kalemim:{n:'Kale Mimarisi',age:3,req:['demirzirh'],cost:{stone:250,iron:100},time:60,fx:{tower:1.4},d:'Kule ve kale hasarı +%40'},
  diplomasi:{n:'Diplomasi Sanatı',age:3,req:['kervan'],cost:{gold:200,food:200},time:60,fx:{dip:1.5},d:'İlişki kazanımı +%50'},
  vergi:{n:'Feodal Vergi',age:3,req:['kervan'],cost:{gold:150,food:250},time:60,fx:{tax:2},d:'Günlük vergi geliri x2'},
@@ -162,13 +169,17 @@ const KINGS=[
 const STORY=[
  {ch:'Bölüm 1 — Sürgün',t:'Köyünü kur: haritada gez, uygun bir yer bul ve "Köyü Kur" düğmesine bas.',ok:()=>S.founded,m:'Sürgün kafilesi nihayet yurt tuttu. Ateş yakıldı, ilk çadırlar kuruldu. Yaşlılar bu toprakların bereketli olduğunu söylüyor.'},
  {t:'4 ev (hane) inşa et.',ok:()=>countB('ev',true)>=4,r:{wood:100},m:'Aileler çatı altına girdi. Çocukların kahkahası köyü doldurdu.'},
+ {t:'Depo ve Oduncu Kulübesi kur (odunu ormana yakın kulübeye taşıtmak işi hızlandırır).',ok:()=>countB('depo',true)>=1&&countB('oduncu',true)>=1,r:{wood:60},m:'Kütükler artık kısa yoldan ambara akıyor. Oduncular kulübe bonusunu seviyor.'},
+ {t:'Bir Çiftlik ve bir Ağıl kur: yiyecek kaynağını çeşitlendir.',ok:()=>countB('ciftlik',true)>=1&&countB('agil',true)>=1,r:{food:60},m:'Tarlalar yeşerdi, ağılda koyunlar meleşiyor.'},
  {t:'Bir Avcı Kulübesi kur ve 3 av getir (avcılar ormanlara dikkat etmeli, kurtlar var).',ok:()=>countB('avci',true)>=1&&(S.stats.hunted||0)>=3,r:{food:80},m:'Av etinin kokusu sofraları şenlendirdi. Avcılar "ormanda kurtlar dolaşıyor" diye uyarıyor.'},
  {ch:'Bölüm 2 — İlk Kış',t:'Kışa hazırlan: 250 odun ve 300 yiyecek biriktir.',ok:()=>S.res.wood>=250&&S.res.food>=300,r:{food:80},m:'Ambarlar doldu. Yaşlılar "bu kış uzun olacak" diyor.'},
- {t:'İlk kışı atlat: bir yıl hayatta kal ve en az 12 nüfusa ulaş.',ok:()=>S.day>=YEARD&&popNow()>=12,r:{gold:80},m:'Karlar eridi, köy ayakta kaldı! İlk yılını tamamladın.'},
+ {t:'Köyün büyüsün: 20 nüfusa ulaş.',ok:()=>popNow()>=20,r:{wood:100,food:60},m:'Köy meydanı artık daha kalabalık. Yeni evler ve yeni işler lazım.'},
  {t:'Savunmaya geç: 1 gözcü kulesi kur ve 5 okçu eğit.',ok:()=>(countB('kule',true)+countB('tkule',true))>=1&&S.units.filter(u=>u.team==='p'&&u.t==='okcu'&&!u.dead).length>=5,r:{wood:150,stone:60},m:'Kulelerin tepesindeki nöbetçiler ufku gözetliyor. Haydutlar artık kolay lokma bulamayacak.'},
+ {t:'Madenci Kulübesi kur ve 100 taş biriktir.',ok:()=>countB('maden',true)>=1&&S.res.stone>=100,r:{gold:50,wood:60},m:'Taş ocağından ilk bloklar geldi. Surlar ve kuleler için artık malzeme var.'},
  {ch:'Bölüm 3 — Bronz ve Kan',t:"Bronz Çağı'na geç.",ok:()=>S.age>=1,r:{gold:60},m:'Demirciler bronzu dövmeyi öğrendi. Yeni bir çağ başladı.'},
  {t:'İlk haydut kampını yok et.',ok:()=>S.stats.camps>=1,r:{gold:100,iron:40},m:'Haydutların yuvası yıkıldı. Yollar biraz daha güvenli.'},
  {t:'Elçilik kur ve bir komşuyla ticaret anlaşması yap.',ok:()=>S.kings.some(k=>k.pact),r:{gold:100},m:'Komşular artık seni tanıyor. Kervanlar yola çıktı.'},
+ {t:'İlk kışı atlat: bir yıl hayatta kal ve en az 12 nüfusa ulaş.',ok:()=>S.day>=YEARD&&popNow()>=12,r:{gold:80},m:'Karlar eridi, köy ayakta kaldı! İlk yılını tamamladın.'},
  {ch:'Bölüm 4 — Hanedan',t:'Hanedanını güçlendir: bir komşu hanedanla evlen.',ok:()=>!!S.dyn.spouse,r:{gold:150},m:'Çanlar çaldı, düğün şenliği günlerce sürdü. İki hanedan artık akraba.'},
  {t:'Şapel kur ve halk mutluluğunu 70\'e çıkar.',ok:()=>countB('sapel',true)>=1&&S.happy>=70,r:{food:120,gold:80},m:'Halk, hükümdarına minnet duyuyor. Sokaklarda şarkılar söyleniyor.'},
  {t:'"Kale" ünvanına yüksel.',ok:()=>S.rank>=1,r:{stone:150},m:'Surların gölgesinde yeni bir hayat başladı.'},
